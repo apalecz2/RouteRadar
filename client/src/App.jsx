@@ -1,15 +1,12 @@
 import Map from './components/Map';
+import Menu from './components/Menu';
 
 function App() {
-
-
     return (
-        <>
+        <div className="relative w-full h-screen">
             <Map />
-            {/*<div>
-                <h1 className="text-2xl m-20">Title</h1>
-            </div>*/}
-        </>
+            <Menu />
+        </div>
     )
 }
 

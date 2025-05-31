@@ -14,14 +14,14 @@ const Map = () => {
         west: -81.6466, // +-0.398
         east: -80.8506
     }
-    
+
     // Test locations
     const locations = [
         { lat: 42.9867, lng: -81.2476, title: "Toronto" },
         { lat: 42.9867, lng: -81.2486, title: "Ottawa" },
         { lat: 42.9867, lng: -81.2496, title: "Vancouver" },
     ];
-    
+
     // Custom icon
     const iconElement = document.createElement("div");
     iconElement.innerHTML = `
@@ -95,7 +95,7 @@ const Map = () => {
     return (
         <div
             ref={mapRef}
-            className="w-full h-screen"
+            className="w-full h-full"
         />
     );
 };
