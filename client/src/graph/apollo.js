@@ -1,0 +1,15 @@
+import { ApolloClient, InMemoryCache, split } from '@apollo/client';
+import { GraphQLWsLink } from '@apollo/client/link/subscriptions';
+import { createClient } from 'graphql-ws';
+import { getMainDefinition } from '@apollo/client/utilities';
+
+const wsLink = new GraphQLWsLink(createClient({
+  url: 'ws://localhost:4000/graphql',
+}));
+
+const client = new ApolloClient({
+  link: wsLink,
+  cache: new InMemoryCache(),
+});
+
+export default client;
