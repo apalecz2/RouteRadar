@@ -1,27 +1,16 @@
-import Map from './components/Map';
 import Menu from './components/Menu';
-
-
 import MapWithBuses from './components/MapWithBuses';
-import React, { useState } from 'react';
+import { useState } from 'react';
 
 function App() {
-    const [routeId, setRouteId] = useState('');
+    const [routeIds, setRouteIds] = useState('');
     
-    
-    return (
-        <MapWithBuses routeId="91" />
-    )
-    
-    
-    /*
     return (
         <div className="relative w-full h-screen">
-            <Map />
-            <Menu />
+            <MapWithBuses routeIds={routeIds} />
+            <Menu routeIds={routeIds} setRouteIds={setRouteIds} />
         </div>
-    )
-        */
+    );
 }
 
 export default App
