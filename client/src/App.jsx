@@ -1,13 +1,16 @@
 import Menu from './components/Menu';
-import MapWithBuses from './components/MapWithBuses';
 import { useState } from 'react';
+import MapContainer from './components/MapContainer';
+import BusMarkers from './components/BusMarkers';
 
 function App() {
-    const [routeIds, setRouteIds] = useState('');
-    
+    const [map, setMap] = useState(null);
+    const [routeIds, setRouteIds] = useState([]);
+
     return (
         <div className="relative w-full h-screen">
-            <MapWithBuses routeIds={routeIds} />
+            <MapContainer onMapLoad={setMap} />
+            {map && <BusMarkers map={map} routeIds={routeIds} />}
             <Menu routeIds={routeIds} setRouteIds={setRouteIds} />
         </div>
     );
