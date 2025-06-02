@@ -1,25 +1,42 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
-const Routes = ({ map, geometryData, routeIds }) => {
+const Routes = ({ map, routeIds }) => {
   const polylinesRef = useRef([]);
+  const [routeData, setRouteData] = useState([]);
 
   useEffect(() => {
-    if (!map || !geometryData || geometryData.type !== 'GeometryCollection') return;
+    const fetchRoutes = async () => {
+      try {
+        const response = await fetch('/routes.json');
+        const data = await response.json();
+        setRouteData(data);
+      } catch (err) {
+        console.error('Failed to load route geometry data:', err);
+      }
+    };
+
+    fetchRoutes();
+  }, []);
+
+  useEffect(() => {
+    if (!map || routeData.length === 0) return;
 
     // Clear old lines
     polylinesRef.current.forEach(polyline => polyline.setMap(null));
     polylinesRef.current = [];
 
-    geometryData.geometries.forEach((geometry, idx) => {
-      if (geometry.type !== 'MultiLineString') return;
+    routeData.forEach((route, idx) => {
+      if (routeIds.length > 0 && !routeIds.includes(route.id)) return;
 
-      geometry.coordinates.forEach((lineCoords, i) => {
-        const path = lineCoords.map(([lng, lat]) => ({ lat, lng }));
+      const color = getColorForIndex(idx);
+
+      route.segments.forEach(segment => {
+        const path = segment.map(([lat, lng]) => ({ lat, lng }));
 
         const polyline = new window.google.maps.Polyline({
           path,
           geodesic: true,
-          strokeColor: getColorForIndex(idx),
+          strokeColor: color,
           strokeOpacity: 0.8,
           strokeWeight: 4,
           map,
@@ -30,19 +47,17 @@ const Routes = ({ map, geometryData, routeIds }) => {
     });
 
     return () => {
-      // Clean up
       polylinesRef.current.forEach(polyline => polyline.setMap(null));
     };
-  }, [map, geometryData, routeIds]);
+  }, [map, routeData, routeIds]);
 
   return null;
 };
 
-// You could improve this to use routeIds -> colors if needed
 function getColorForIndex(index) {
   const colors = [
-    '#FF5733', '#33FF57', '#3357FF', '#F39C12', '#9B59B6', '#16A085',
-    '#E74C3C', '#3498DB', '#2ECC71', '#E67E22',
+    '#FF5733', '#33FF57', '#3357FF', '#F39C12', '#9B59B6',
+    '#16A085', '#E74C3C', '#3498DB', '#2ECC71', '#E67E22',
   ];
   return colors[index % colors.length];
 }
