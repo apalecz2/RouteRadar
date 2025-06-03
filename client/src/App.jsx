@@ -3,6 +3,7 @@ import { useState } from 'react';
 import MapContainer from './components/MapContainer';
 import BusMarkers from './components/BusMarkers';
 import Routes from './components/Routes';
+import Stops from './components/Stops';
 
 function App() {
     const [map, setMap] = useState(null);
@@ -13,6 +14,7 @@ function App() {
             <MapContainer onMapLoad={setMap} />
             {map && <BusMarkers map={map} routeIds={routeIds} />}
             {map && <Routes map={map} routeIds={routeIds} />}
+            {map && <Stops map={map} routeIds={routeIds} />}
             <Menu routeIds={routeIds} setRouteIds={setRouteIds} />
         </div>
     );
