@@ -21,50 +21,62 @@ const Stops = ({ map, routeIds }) => {
     useEffect(() => {
         if (!map || stopData.length === 0 || !google.maps.marker?.AdvancedMarkerElement) return;
 
-        // Clear previous markers
-        markersRef.current.forEach(marker => marker.map = null);
-        markersRef.current = [];
-        
-        
-        stopData.forEach((stop) => {
-            
-            // Is the stop in the routes selected?
-            const shouldDisplay =
-                routeIds.length === 0 ||
-                stop.routes.some(stopRoute => {
-                    // for if route is 1A 1B etc - match it with ids 1, 2, etc
-                    const match = stopRoute.match(/^\d+/)
-                    const normalizedStopRoute = match[0];
-                    return routeIds.some(rid => {
-                        const normalizedRid = parseInt(rid, 10).toString();
-                        return (
-                            normalizedStopRoute.startsWith(normalizedRid) &&
-                            (
-                                normalizedStopRoute.length === normalizedRid.length ||
-                                /^[A-Za-z]+$/.test(normalizedStopRoute.slice(normalizedRid.length))
-                            )
-                        );
-                    });
+        const matchesRoute = (stop) => {
+            return routeIds.length === 0 || stop.routes.some(route => {
+                const match = route.match(/^\d+/);
+                const normalizedStopRoute = match?.[0];
+                return routeIds.some(rid => {
+                    const normalizedRid = parseInt(rid, 10).toString();
+                    return (
+                        normalizedStopRoute?.startsWith(normalizedRid) &&
+                        (
+                            normalizedStopRoute.length === normalizedRid.length ||
+                            /^[A-Za-z]+$/.test(normalizedStopRoute.slice(normalizedRid.length))
+                        )
+                    );
                 });
+            });
+        };
 
+        const updateVisibleMarkers = () => {
+            const zoom = map.getZoom();
+            const bounds = map.getBounds();
+            if (!bounds || zoom < 14) {
+                // Hide all markers if zoomed out too far
+                markersRef.current.forEach(marker => marker.map = null);
+                return;
+            }
 
-            if (!shouldDisplay) return;
+            // Clear existing markers
+            markersRef.current.forEach(marker => marker.map = null);
+            markersRef.current = [];
 
-            const [lat, lng] = stop.coordinates;
-
-            const marker = new google.maps.marker.AdvancedMarkerElement({
-                map,
-                position: { lat, lng },
-                title: stop.name,
-                content: createStopPin(),
+            const visibleStops = stopData.filter(stop => {
+                const [lat, lng] = stop.coordinates;
+                const inBounds = bounds.contains(new google.maps.LatLng(lat, lng));
+                const onRoute = matchesRoute(stop);
+                return inBounds && onRoute;
             });
 
-            markersRef.current.push(marker);
-        });
+            visibleStops.forEach(stop => {
+                const [lat, lng] = stop.coordinates;
 
+                const marker = new google.maps.marker.AdvancedMarkerElement({
+                    map,
+                    position: { lat, lng },
+                    title: stop.name,
+                    content: createStopPin(),
+                });
 
+                markersRef.current.push(marker);
+            });
+        };
+
+        const idleListener = google.maps.event.addListener(map, 'idle', updateVisibleMarkers);
+        updateVisibleMarkers(); // Initial run
 
         return () => {
+            google.maps.event.removeListener(idleListener);
             markersRef.current.forEach(marker => marker.map = null);
         };
     }, [map, stopData, routeIds]);
