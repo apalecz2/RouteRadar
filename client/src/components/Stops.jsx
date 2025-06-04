@@ -89,8 +89,8 @@ function createStopPin() {
     pin.style.width = '10px';
     pin.style.height = '10px';
     pin.style.borderRadius = '50%';
-    pin.style.backgroundColor = '#000';
-    pin.style.border = '2px solid white';
+    pin.style.backgroundColor = '#fff';
+    pin.style.border = '2px solid black';
     pin.style.boxShadow = '0 0 2px rgba(0,0,0,0.5)';
     return pin;
 }

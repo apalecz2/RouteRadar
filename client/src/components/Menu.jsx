@@ -4,6 +4,7 @@ let allRoutes = [];
 
 const Menu = ({ routeIds, setRouteIds }) => {
     const [showMenu, setShowMenu] = useState(false);
+    const [routeColors, setRouteColors] = useState({});
 
     const handleToggleRoute = (route) => {
         setRouteIds(prev =>
@@ -18,9 +19,15 @@ const Menu = ({ routeIds, setRouteIds }) => {
             try {
                 const response = await fetch('/routes.json');
                 const data = await response.json();
-                
+
                 allRoutes = [...new Set(data.map(route => route.id))];
-                
+
+                const colours = {};
+                allRoutes.forEach((route, index) => {
+                    colours[route] = getRouteColor(index, allRoutes.length);
+                });
+                setRouteColors(colours);
+
             } catch (err) {
                 console.error('Failed to load route data:', err);
             }
@@ -45,19 +52,32 @@ const Menu = ({ routeIds, setRouteIds }) => {
                     <div className="mb-4">
                         <h3 className="font-medium mb-1">Select Routes</h3>
                         <ul className="space-y-1 max-h-40 overflow-y-auto">
-                            {allRoutes.map(route => (
-                                <li key={route}>
-                                    <label className="flex items-center space-x-2">
-                                        <input
-                                            type="checkbox"
-                                            checked={routeIds.includes(route)}
-                                            onChange={() => handleToggleRoute(route)}
-                                        />
-                                        <span>Route {route}</span>
-                                    </label>
-                                </li>
-                            ))}
+                            {allRoutes.map(route => {
+                                const isSelected = routeIds.includes(route);
+                                const bgColor = isSelected ? routeColors[route] : '#ffffff';
+                                const textColor = isSelected ? 'white' : 'black';
+
+                                return (
+                                    <li key={route}>
+                                        <label
+                                            className="flex items-center space-x-2 px-2 py-1 rounded cursor-pointer"
+                                            style={{
+                                                backgroundColor: bgColor,
+                                                color: textColor,
+                                            }}
+                                        >
+                                            <input
+                                                type="checkbox"
+                                                checked={isSelected}
+                                                onChange={() => handleToggleRoute(route)}
+                                            />
+                                            <span>Route {route}</span>
+                                        </label>
+                                    </li>
+                                );
+                            })}
                         </ul>
+
                     </div>
 
                     <ul className="space-y-2">
@@ -70,5 +90,12 @@ const Menu = ({ routeIds, setRouteIds }) => {
         </div>
     );
 };
+
+function getRouteColor(index, totalRoutes) {
+    const hue = (index * 360 / totalRoutes) % 360;
+    const saturation = 70;
+    const lightness = 50;
+    return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+}
 
 export default Menu;

@@ -28,20 +28,31 @@ const Routes = ({ map, routeIds }) => {
         routeData.forEach((route, idx) => {
             if (routeIds.length > 0 && !routeIds.includes(route.id)) return;
 
-            const color = getColorForIndex(idx);
+            const color = getRouteColor(idx, 37);
 
             route.segments.forEach(segment => {
                 const path = segment.map(([lat, lng]) => ({ lat, lng }));
+
+                const outline = new window.google.maps.Polyline({
+                    path,
+                    geodesic: true,
+                    strokeColor: '#000000',
+                    strokeOpacity: 0.6,
+                    strokeWeight: 6,
+                    map,
+                    zIndex: 1,
+                });
+                polylinesRef.current.push(outline);
 
                 const polyline = new window.google.maps.Polyline({
                     path,
                     geodesic: true,
                     strokeColor: color,
-                    strokeOpacity: 0.8,
+                    strokeOpacity: 0.7,
                     strokeWeight: 4,
                     map,
+                    zIndex: 2,
                 });
-
                 polylinesRef.current.push(polyline);
             });
         });
@@ -54,12 +65,11 @@ const Routes = ({ map, routeIds }) => {
     return null;
 };
 
-function getColorForIndex(index) {
-    const colors = [
-        '#FF5733', '#33FF57', '#3357FF', '#F39C12', '#9B59B6',
-        '#16A085', '#E74C3C', '#3498DB', '#2ECC71', '#E67E22',
-    ];
-    return colors[index % colors.length];
+function getRouteColor(index, totalRoutes) {
+    const hue = (index * 360 / totalRoutes) % 360;
+    const saturation = 70;
+    const lightness = 50;
+    return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
 }
 
 export default Routes;
