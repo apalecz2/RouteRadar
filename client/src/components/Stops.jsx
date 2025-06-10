@@ -58,18 +58,31 @@ const Stops = ({ map, routeIds }) => {
                 return inBounds && onRoute;
             });
 
-            visibleStops.forEach(stop => {
-                const [lat, lng] = stop.coordinates;
+            const infoWindow = new google.maps.InfoWindow();
 
-                const marker = new google.maps.marker.AdvancedMarkerElement({
-                    map,
-                    position: { lat, lng },
-                    title: stop.name,
-                    content: createStopPin(),
-                });
+visibleStops.forEach(stop => {
+    const [lat, lng] = stop.coordinates;
 
-                markersRef.current.push(marker);
-            });
+    const marker = new google.maps.marker.AdvancedMarkerElement({
+        map,
+        position: { lat, lng },
+        title: stop.name,
+        content: createStopPin(),
+    });
+
+    marker.addListener('click', () => {
+        const content = `
+            <div style="padding: 8px; max-width: 200px;">
+                <strong>${stop.name}</strong><br/>
+                <span>Routes: ${stop.routes.join(', ')}</span>
+            </div>
+        `;
+        infoWindow.setContent(content);
+        infoWindow.open(map, marker);
+    });
+
+    markersRef.current.push(marker);
+});
         };
 
         const idleListener = google.maps.event.addListener(map, 'idle', updateVisibleMarkers);

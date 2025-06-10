@@ -10,10 +10,10 @@ import { client } from './graph/apolloClient';
 
 createRoot(document.getElementById('root')).render(
     <StrictMode>
-        <ErrorBoundary>
+        {/*<ErrorBoundary>*/}
             <ApolloProvider client={client}>
                 <App />
             </ApolloProvider>
-        </ErrorBoundary>
+        {/*</ErrorBoundary>*/}
     </StrictMode>,
 )
