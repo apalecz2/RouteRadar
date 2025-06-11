@@ -33,13 +33,14 @@ const RouteSelection = ({ routeIds, setRouteIds, isOpen }) => {
         fixed top-0 left-0 w-full h-full z-40
         flex justify-center md:justify-start items-start
         py-6 md:px-6
+        pointer-events-none
       `}
         >
             <div
                 className={`
           relative
           w-full max-w-[90%] md:w-[420px]
-          min-h-[calc(100vh-4rem)] p-6 overflow-y-auto z-50
+          min-h-[calc(100vh-4rem)] p-3 pt-2 overflow-y-auto z-50
 
           rounded-2xl md:rounded-3xl
           bg-white/10 dark:bg-white/5
@@ -51,10 +52,12 @@ const RouteSelection = ({ routeIds, setRouteIds, isOpen }) => {
           before:rounded-2xl md:before:rounded-3xl
           before:bg-gradient-to-br before:from-white/40 before:to-white/0
           before:pointer-events-none
+          
+          pointer-events-auto
         `}
             >
                 <div className="relative z-10 text-center">
-                    <h2 className="text-black text-2xl font-semibold mb-4">Menu</h2>
+                    <h2 className="text-black text-xl font-semibold mb-4">Menu</h2>
                 </div>
                 <div>
                     <h3 className="font-medium mb-1">Select Routes</h3>
@@ -88,13 +91,13 @@ const MenuButton = ({ onClick, isOpen }) => (
     <button
       onClick={onClick}
       className={`
-        fixed top-6 left-8 md:left-6 z-50
+        fixed top-6 left-5 md:left-6 z-50
         p-2 md:p-2
         rounded-2xl
         bg-white/10 dark:bg-white/5
         backdrop-blur-2xl
-        border border-white/30 dark:border-white/15
-        shadow-xl
+        ${isOpen ? '' : 'border border-black/30 dark:border-black/30 shadow-xl'}
+        hover:bg-white/50
         flex items-center justify-center
         h-12 w-12
       `}
