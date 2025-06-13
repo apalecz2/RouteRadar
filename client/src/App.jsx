@@ -7,6 +7,8 @@ import Stops from './components/Stops';
 
 import RouteSelection from './components/RouteSelection'
 
+import Arrivals from './components/ArrivalsTest/Arrivals';
+
 import Menu2 from './components/Menu2'
 
 function App() {
@@ -22,6 +24,7 @@ function App() {
             {/*<Menu routeIds={routeIds} setRouteIds={setRouteIds} />*/}
             {/*<RouteSelection routeIds={routeIds} setRouteIds={setRouteIds}/>*/}
             <Menu2 routeIds={routeIds} setRouteIds={setRouteIds}/>
+            <Arrivals />
         </div>
     );
 }

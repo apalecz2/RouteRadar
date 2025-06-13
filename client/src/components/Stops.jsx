@@ -1,21 +1,36 @@
 import { useEffect, useRef, useState } from 'react';
 
+import { getArrivalsForStop } from './ArrivalsTest/getArrivalsForStop';
+
+function formatTime(unixSeconds) {
+    const date = new Date(unixSeconds * 1000);
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
 const Stops = ({ map, routeIds }) => {
     const markersRef = useRef([]);
     const [stopData, setStopData] = useState([]);
+    const [tripUpdates, setTripUpdates] = useState(null);
 
     useEffect(() => {
-        const fetchStops = async () => {
+        const fetchData = async () => {
             try {
-                const response = await fetch('/stops.json');
-                const data = await response.json();
-                setStopData(data);
+                const [stopsRes, tripUpdatesRes] = await Promise.all([
+                    fetch('/stops.json'),
+                    fetch('/TripUpdates.json')
+                ]);
+                const [stopsData, tripData] = await Promise.all([
+                    stopsRes.json(),
+                    tripUpdatesRes.json()
+                ]);
+                setStopData(stopsData);
+                setTripUpdates(tripData);
             } catch (err) {
-                console.error('Failed to load stop data:', err);
+                console.error('Failed to load data:', err);
             }
         };
 
-        fetchStops();
+        fetchData();
     }, []);
 
     useEffect(() => {
@@ -60,30 +75,45 @@ const Stops = ({ map, routeIds }) => {
 
             const infoWindow = new google.maps.InfoWindow();
 
-visibleStops.forEach(stop => {
-    const [lat, lng] = stop.coordinates;
+            visibleStops.forEach(stop => {
+                const [lat, lng] = stop.coordinates;
 
-    const marker = new google.maps.marker.AdvancedMarkerElement({
-        map,
-        position: { lat, lng },
-        title: stop.name,
-        content: createStopPin(),
-    });
+                const marker = new google.maps.marker.AdvancedMarkerElement({
+                    map,
+                    position: { lat, lng },
+                    title: stop.name,
+                    content: createStopPin(),
+                });
 
-    marker.addListener('click', () => {
-        const content = `
-            <div style="padding: 8px; max-width: 200px;">
-                <strong>${stop.name}</strong><br/>
-                <strong>${stop.stop_id}</strong><br/>
-                <span>Routes: ${stop.routes.join(', ')}</span>
-            </div>
-        `;
-        infoWindow.setContent(content);
-        infoWindow.open(map, marker);
-    });
+                marker.addListener('click', () => {
+                    const arrivals = tripUpdates
+                        ? getArrivalsForStop(stop.stop_id, tripUpdates, stopData)
+                            .sort((a, b) => a.arrivalTime - b.arrivalTime)
+                            .slice(0, 3)
+                        : [];
 
-    markersRef.current.push(marker);
-});
+                    const arrivalHTML = arrivals.length
+                        ? `<ul style="padding-left: 16px; margin: 4px 0;">${arrivals.map(a =>
+                            `<li>${formatTime(a.arrivalTime)} - Route ${a.routeId}</li>`).join('')}</ul>`
+                        : '<div>No upcoming arrivals</div>';
+
+                    const content = `
+                        <div style="padding: 8px; max-width: 200px;">
+                            <strong>${stop.name}</strong><br/>
+                            <span>Stop ID: ${stop.stop_id}</span><br/>
+                            <span>Routes: ${stop.routes.join(', ')}</span><br/>
+                            <hr />
+                            ${arrivalHTML}
+                        </div>
+                    `;
+
+                    infoWindow.setContent(content);
+                    infoWindow.open(map, marker);
+                });
+
+
+                markersRef.current.push(marker);
+            });
         };
 
         const idleListener = google.maps.event.addListener(map, 'idle', updateVisibleMarkers);
