@@ -74,6 +74,7 @@ visibleStops.forEach(stop => {
         const content = `
             <div style="padding: 8px; max-width: 200px;">
                 <strong>${stop.name}</strong><br/>
+                <strong>${stop.stop_id}</strong><br/>
                 <span>Routes: ${stop.routes.join(', ')}</span>
             </div>
         `;
