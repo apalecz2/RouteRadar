@@ -1,3 +1,111 @@
+//VehiclePositions Sample:
+/*
+{
+    "header": {
+        "gtfs_realtime_version": "2.0",
+        "incrementality": 0,
+        "timestamp": 1749780231
+    },
+    "entity": [
+        {
+            "id": "27",
+            "is_deleted": false,
+            "trip_update": null,
+            "vehicle": {
+                "trip": {
+                    "trip_id": "2154700",
+                    "start_time": "",
+                    "start_date": "20250612",
+                    "schedule_relationship": 0,
+                    "route_id": "25",
+                    "direction_id": 1
+                },
+                "position": {
+                    "latitude": 43.02554,
+                    "longitude": -81.28163,
+                    "bearing": 270,
+                    "odometer": 0,
+                    "speed": 0
+                },
+                "current_stop_sequence": 0,
+                "current_status": 2,
+                "timestamp": 1749780213,
+                "congestion_level": 0,
+                "stop_id": "",
+                "vehicle": {
+                    "id": "3027",
+                    "label": "27",
+                    "license_plate": ""
+                },
+                "occupancy_status": 5,
+                "occupancy_percentage": 120,
+                "multi_carriage_details": []
+            },
+            "alert": null,
+            "shape": null,
+            "trip": null,
+            "route": null,
+            "stop": null
+        },
+*/
+// TripUpdates Sample:
+/*
+{
+    "header": {
+        "gtfs_realtime_version": "2.0",
+        "incrementality": 0,
+        "timestamp": 1749780261
+    },
+    "entity": [
+        {
+            "id": "2154700",
+            "is_deleted": false,
+            "trip_update": {
+                "trip": {
+                    "trip_id": "2154700",
+                    "start_time": "22:05:00",
+                    "start_date": "20250612",
+                    "schedule_relationship": 0,
+                    "route_id": "25",
+                    "direction_id": 1
+                },
+                "stop_time_update": [
+                    {
+                        "stop_sequence": 1,
+                        "arrival": {
+                            "delay": 13,
+                            "time": 1749780313,
+                            "uncertainty": 0,
+                            "schedule_time": 1749780300
+                        },
+                        "departure": {
+                            "delay": 13,
+                            "time": 1749780313,
+                            "uncertainty": 0,
+                            "schedule_time": 1749780300
+                        },
+                        "stop_id": "MASOSTO2",
+                        "schedule_relationship": 0,
+                        "stop_time_properties": {
+                            "assigned_stop_id": "",
+                            "stop_headsign": {
+                                "translation": [
+                                    {
+                                        "text": "",
+                                        "language": "en"
+                                    }
+                                ]
+                            },
+                            "pickup_type": 0,
+                            "drop_off_type": 1,
+                            "shape_dist_traveled": 0
+                        },
+                        "departure_occupancy_status": 0
+                    },
+*/
+
+
+
 import express from 'express';
 import { createServer } from 'http';
 import { WebSocketServer } from 'ws';
@@ -24,6 +132,7 @@ const typeDefs = `
     Longitude: Float
     Destination: String
     VehicleId: String
+    Bearing: Float
   }
     
   type StopArrival {
@@ -117,7 +226,6 @@ const wsServer = new WebSocketServer({
 
 useServer({ schema }, wsServer);
 
-const stopMap = new Map();
 
 async function pollAndPublish() {
     try {
@@ -155,8 +263,9 @@ async function pollAndPublish() {
                 Longitude: v.position.longitude,
                 Destination: v.trip.trip_id,
                 VehicleId: v.vehicle.id,
+                Bearing: v.position.bearing,
             };
-
+            
             // Store route-wise
             if (!latestVehicleData.has(payload.RouteId)) {
                 latestVehicleData.set(payload.RouteId, []);
@@ -212,5 +321,5 @@ setInterval(pollAndPublish, POLL_INTERVAL);
 
 const PORT = process.env.PORT || 4000;
 httpServer.listen(PORT, () => {
-    console.log(`🚀 Server ready at http://localhost:${PORT}/graphql`);
+    console.log(`Server ready at http://localhost:${PORT}/graphql`);
 });

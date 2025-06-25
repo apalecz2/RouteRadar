@@ -9,109 +9,129 @@ const VEHICLE_SUBSCRIPTION = gql`
       Longitude
       Destination
       VehicleId
+      Bearing
     }
   }
 `;
 
 const routeColors = {
-  '02': 'blue',
-  '07': 'red',
-  '10': 'green',
-  '20': 'orange',
-  '34': 'purple',
+    '02': 'blue',
+    '07': 'red',
+    '10': 'green',
+    '20': 'orange',
+    '34': 'purple',
 };
 
 const BusMarkers = ({ routeIds, map }) => {
-  const client = useApolloClient();
-  const markersRef = useRef({});
-  const routeToVehicleMap = useRef({});
-  const subscriptionsRef = useRef({});
+    const client = useApolloClient();
+    const markersRef = useRef({});
+    const routeToVehicleMap = useRef({});
+    const subscriptionsRef = useRef({});
 
-  useEffect(() => {
-    if (!map || !window.google?.maps) return;
+    useEffect(() => {
+        if (!map || !window.google?.maps) return;
 
-    const AdvancedMarkerElement = window.google.maps.marker?.AdvancedMarkerElement;
-    if (!AdvancedMarkerElement) return;
+        const AdvancedMarkerElement = window.google.maps.marker?.AdvancedMarkerElement;
+        if (!AdvancedMarkerElement) return;
 
-    const newRoutes = new Set(routeIds);
-    const currentRoutes = new Set(Object.keys(subscriptionsRef.current));
+        const newRoutes = new Set(routeIds);
+        const currentRoutes = new Set(Object.keys(subscriptionsRef.current));
 
-    const routesToRemove = [...currentRoutes].filter(r => !newRoutes.has(r));
-    const routesToAdd = [...newRoutes].filter(r => !currentRoutes.has(r));
+        const routesToRemove = [...currentRoutes].filter(r => !newRoutes.has(r));
+        const routesToAdd = [...newRoutes].filter(r => !currentRoutes.has(r));
 
-    for (const route of routesToRemove) {
-      subscriptionsRef.current[route]?.unsubscribe();
-      delete subscriptionsRef.current[route];
+        for (const route of routesToRemove) {
+            subscriptionsRef.current[route]?.unsubscribe();
+            delete subscriptionsRef.current[route];
 
-      const vehicleIds = routeToVehicleMap.current[route] || new Set();
-      for (const id of vehicleIds) {
-        if (markersRef.current[id]) {
-          markersRef.current[id].map = null;
-          delete markersRef.current[id];
-        }
-      }
-      delete routeToVehicleMap.current[route];
-    }
-
-    for (const routeId of routesToAdd) {
-      routeToVehicleMap.current[routeId] = new Set();
-
-      const observable = client.subscribe({
-        query: VEHICLE_SUBSCRIPTION,
-        variables: { routeId },
-      });
-
-      const sub = observable.subscribe({
-        next({ data }) {
-          const vehicle = data?.vehicleUpdates;
-          if (!vehicle) return;
-
-          const id = vehicle.VehicleId;
-          const pos = { lat: vehicle.Latitude, lng: vehicle.Longitude };
-
-          routeToVehicleMap.current[routeId].add(id);
-
-          const existingMarker = markersRef.current[id];
-          if (existingMarker) {
-            const oldLat = existingMarker.position.lat;
-            const oldLng = existingMarker.position.lng;
-            const hasMoved = Math.abs(oldLat - pos.lat) > 0.0001 || Math.abs(oldLng - pos.lng) > 0.0001;
-            if (hasMoved) {
-              existingMarker.position = pos;
+            const vehicleIds = routeToVehicleMap.current[route] || new Set();
+            for (const id of vehicleIds) {
+                if (markersRef.current[id]) {
+                    markersRef.current[id].map = null;
+                    delete markersRef.current[id];
+                }
             }
-          } else {
-            const color = routeColors[routeId] || 'gray';
-            const iconElement = document.createElement('div');
-            iconElement.innerHTML = `
-              <svg xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="${color}">
-                  <path d="M480-280q83 0 141.5-58.5T680-480q0-83-58.5-141.5T480-680q-83 0-141.5 58.5T280-480q0 83 58.5 141.5T480-280Zm0 200q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Z"/>
-              </svg>`;
+            delete routeToVehicleMap.current[route];
+        }
 
-            markersRef.current[id] = new AdvancedMarkerElement({
-              position: pos,
-              map,
-              title: vehicle.Destination,
-              content: iconElement,
+        for (const routeId of routesToAdd) {
+            routeToVehicleMap.current[routeId] = new Set();
+
+            const observable = client.subscribe({
+                query: VEHICLE_SUBSCRIPTION,
+                variables: { routeId },
             });
-          }
-        },
-      });
 
-      subscriptionsRef.current[routeId] = sub;
-    }
+            const sub = observable.subscribe({
+                next({ data }) {
+                    const vehicle = data?.vehicleUpdates;
+                    if (!vehicle) return;
 
-    return () => {
-      for (const sub of Object.values(subscriptionsRef.current)) {
-        sub.unsubscribe();
-      }
-      subscriptionsRef.current = {};
-      Object.values(markersRef.current).forEach(marker => marker.map = null);
-      markersRef.current = {};
-      routeToVehicleMap.current = {};
-    };
-  }, [routeIds, map]);
+                    const id = vehicle.VehicleId;
+                    const pos = { lat: vehicle.Latitude, lng: vehicle.Longitude };
+                    
 
-  return null;
+                    routeToVehicleMap.current[routeId].add(id);
+
+                    const existingMarker = markersRef.current[id];
+                    if (existingMarker) {
+                        const markerContent = existingMarker.content?.firstChild;
+                        if (markerContent?.style) {
+                            markerContent.style.transform = `rotate(${vehicle.Bearing || 0}deg)`;
+                        }
+                        existingMarker.position = pos;
+                        
+                    } else {
+                        const color = routeColors[routeId] || 'gray';
+                        const iconElement = document.createElement('div');
+                        const rotation = vehicle.Bearing || 0;
+                        iconElement.innerHTML = `
+                        <div style="
+                          width: 0;
+                          height: 0;
+                          position: relative;
+                        ">
+                          <div style="
+                            position: absolute;
+                            top: 0;
+                            left: 0;
+                            transform: translate(-50%, -100%);
+                          ">
+                            
+                            <svg xmlns="http://www.w3.org/2000/svg" 
+                                height="24px" viewBox="0 -960 960 960" width="24px" fill="${color}"
+                                style="transform: rotate(${rotation}deg); transition: transform 0.3s ease;"
+                            >
+                                <path d="m480-226.13-260.63 111.2q-14.67 5.71-27.85 2.73-13.17-2.97-22.37-12.17-9.19-9.19-12.05-22.75-2.86-13.55 3.1-28.23l277.78-625.76q5.72-13.67 17.65-20.51 11.94-6.84 24.37-6.84 12.43 0 24.37 6.84 11.93 6.84 17.65 20.51L799.8-175.35q5.96 14.68 3.1 28.23-2.86 13.56-12.05 22.75-9.2 9.2-22.37 12.17-13.18 2.98-27.85-2.73L480-226.13Z"/>
+                            </svg>
+                          </div>
+                        </div>
+                      `;
+                        markersRef.current[id] = new AdvancedMarkerElement({
+                            position: pos,
+                            map,
+                            title: vehicle.Destination,
+                            content: iconElement,
+                        });
+                    }
+                },
+            });
+
+            subscriptionsRef.current[routeId] = sub;
+        }
+        
+        return () => {
+            for (const sub of Object.values(subscriptionsRef.current)) {
+                sub.unsubscribe();
+            }
+            subscriptionsRef.current = {};
+            Object.values(markersRef.current).forEach(marker => marker.map = null);
+            markersRef.current = {};
+            routeToVehicleMap.current = {};
+        };
+    }, [routeIds, map]);
+
+    return null;
 };
 
 export default BusMarkers;
