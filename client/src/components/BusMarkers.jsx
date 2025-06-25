@@ -86,33 +86,21 @@ const BusMarkers = ({ routeIds, map }) => {
                         const iconElement = document.createElement('div');
                         const rotation = vehicle.Bearing || 0;
                         iconElement.innerHTML = `
-                        <div style="
-                          width: 0;
-                          height: 0;
-                          position: relative;
-                        ">
-                          <div style="
-                            position: absolute;
-                            top: 0;
-                            left: 0;
-                            transform: translate(-50%, -100%);
-                          ">
-                            
+                        
                             <svg xmlns="http://www.w3.org/2000/svg" 
                                 height="24px" viewBox="0 -960 960 960" width="24px" fill="${color}"
                                 style="transform: rotate(${rotation}deg); transition: transform 0.3s ease;"
                             >
                                 <path d="m480-226.13-260.63 111.2q-14.67 5.71-27.85 2.73-13.17-2.97-22.37-12.17-9.19-9.19-12.05-22.75-2.86-13.55 3.1-28.23l277.78-625.76q5.72-13.67 17.65-20.51 11.94-6.84 24.37-6.84 12.43 0 24.37 6.84 11.93 6.84 17.65 20.51L799.8-175.35q5.96 14.68 3.1 28.23-2.86 13.56-12.05 22.75-9.2 9.2-22.37 12.17-13.18 2.98-27.85-2.73L480-226.13Z"/>
                             </svg>
-                          </div>
-                        </div>
+                         
                       `;
                         markersRef.current[id] = new AdvancedMarkerElement({
                             position: pos,
                             map,
                             title: vehicle.Destination,
                             content: iconElement,
-                        });
+                        }).content.style.transform = 'translateY(50%)' // Centers marker vertically
                     }
                 },
             });
