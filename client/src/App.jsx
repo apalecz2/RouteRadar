@@ -24,7 +24,6 @@ function App() {
             {/*<Menu routeIds={routeIds} setRouteIds={setRouteIds} />*/}
             {/*<RouteSelection routeIds={routeIds} setRouteIds={setRouteIds}/>*/}
             <Menu2 routeIds={routeIds} setRouteIds={setRouteIds}/>
-            <Arrivals />
         </div>
     );
 }
