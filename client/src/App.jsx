@@ -4,6 +4,7 @@ import MapContainer from './components/MapContainer';
 import BusMarkers from './components/BusMarkers';
 import Routes from './components/Routes';
 import Stops from './components/Stops';
+import Stops2 from './components/Stops2'
 
 import RouteSelection from './components/RouteSelection'
 
@@ -20,7 +21,8 @@ function App() {
             <MapContainer onMapLoad={setMap} />
             {map && <BusMarkers map={map} routeIds={routeIds} />}
             {map && <Routes map={map} routeIds={routeIds} />}
-            {map && <Stops map={map} routeIds={routeIds} />}
+            {/*map && <Stops map={map} routeIds={routeIds} />*/}
+            {map && <Stops2 map={map} routeIds={routeIds} />}
             {/*<Menu routeIds={routeIds} setRouteIds={setRouteIds} />*/}
             {/*<RouteSelection routeIds={routeIds} setRouteIds={setRouteIds}/>*/}
             <Menu2 routeIds={routeIds} setRouteIds={setRouteIds}/>
