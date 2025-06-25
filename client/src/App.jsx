@@ -22,7 +22,7 @@ function App() {
             {map && <BusMarkers map={map} routeIds={routeIds} />}
             {map && <Routes map={map} routeIds={routeIds} />}
             {/*map && <Stops map={map} routeIds={routeIds} />*/}
-            {map && <Stops2 map={map} routeIds={routeIds} />}
+            {map && <Stops2 map={map} routeIds={routeIds.map(val => val.replace(/^0+/, ''))} />}
             {/*<Menu routeIds={routeIds} setRouteIds={setRouteIds} />*/}
             {/*<RouteSelection routeIds={routeIds} setRouteIds={setRouteIds}/>*/}
             <Menu2 routeIds={routeIds} setRouteIds={setRouteIds}/>
