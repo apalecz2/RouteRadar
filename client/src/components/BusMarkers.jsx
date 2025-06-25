@@ -69,7 +69,7 @@ const BusMarkers = ({ routeIds, map }) => {
 
                     const id = vehicle.VehicleId;
                     const pos = { lat: vehicle.Latitude, lng: vehicle.Longitude };
-                    
+
 
                     routeToVehicleMap.current[routeId].add(id);
 
@@ -80,7 +80,7 @@ const BusMarkers = ({ routeIds, map }) => {
                             markerContent.style.transform = `rotate(${vehicle.Bearing || 0}deg)`;
                         }
                         existingMarker.position = pos;
-                        
+
                     } else {
                         const color = routeColors[routeId] || 'gray';
                         const iconElement = document.createElement('div');
@@ -94,20 +94,25 @@ const BusMarkers = ({ routeIds, map }) => {
                                 <path d="m480-226.13-260.63 111.2q-14.67 5.71-27.85 2.73-13.17-2.97-22.37-12.17-9.19-9.19-12.05-22.75-2.86-13.55 3.1-28.23l277.78-625.76q5.72-13.67 17.65-20.51 11.94-6.84 24.37-6.84 12.43 0 24.37 6.84 11.93 6.84 17.65 20.51L799.8-175.35q5.96 14.68 3.1 28.23-2.86 13.56-12.05 22.75-9.2 9.2-22.37 12.17-13.18 2.98-27.85-2.73L480-226.13Z"/>
                             </svg>
                          
-                      `;
+                        `;
+                        iconElement.style.transform = 'translateY(50%)'   // Centers marker vertically
                         markersRef.current[id] = new AdvancedMarkerElement({
                             position: pos,
                             map,
                             title: vehicle.Destination,
                             content: iconElement,
-                        }).content.style.transform = 'translateY(50%)' // Centers marker vertically
+                        })
+
+                        markersRef.current[id].addListener('click', () => {
+                            console.log(vehicle.RouteId) // Eventually add window to display what route the selected bus is
+                        });
                     }
                 },
             });
 
             subscriptionsRef.current[routeId] = sub;
         }
-        
+
         return () => {
             for (const sub of Object.values(subscriptionsRef.current)) {
                 sub.unsubscribe();
