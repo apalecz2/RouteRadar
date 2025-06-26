@@ -10,12 +10,12 @@ const processStops = (stops) => {
 
     for (const stop of stops) {
         stopsById.set(stop.stop_id, stop);
-        console.log(stop)
+        
 
         for (let route of stop.routes) {
             // Extract the route number, disregard the A, B suffix
             route = route.match(/^\d+/)[0]
-            console.log(route)
+            
             if (!stopsByRoute.has(route)) {
                 stopsByRoute.set(route, new Set());
             }
@@ -92,9 +92,12 @@ const Stops2 = ({ map, routeIds }) => {
         const stopIds = new Set();
         // If no routeIds provided, include ALL stop IDs
         if (!routeIds || routeIds.length === 0) {
+            // No this makes it take so long to load. it does look cool though
+            /*
             for (const stopId of stopsById.keys()) {
                 stopIds.add(stopId);
             }
+                */
         } else {
             for (const routeId of routeIds) {
                 const idsForRoute = stopsByRoute.get(routeId);
