@@ -10,12 +10,12 @@ const processStops = (stops) => {
 
     for (const stop of stops) {
         stopsById.set(stop.stop_id, stop);
-        
+
 
         for (let route of stop.routes) {
             // Extract the route number, disregard the A, B suffix
             route = route.match(/^\d+/)[0]
-            
+
             if (!stopsByRoute.has(route)) {
                 stopsByRoute.set(route, new Set());
             }
@@ -65,7 +65,19 @@ const getStopsForRoutes = (routeIds, stopsById, stopsByRoute) => {
     return stops;
 };
 
-function createStopPin(colour = '#ffffff') {
+function createStopPin(colour = '#ffffff', withPing = false) {
+    const wrapper = document.createElement('div');
+    wrapper.style.position = 'relative';
+    wrapper.style.width = '12px';
+    wrapper.style.height = '12px';
+
+    if (withPing) {
+        const ping = document.createElement('div');
+        ping.className = 'stop-ping';
+        //ping.style.transform = 'translateY(50%)';
+        wrapper.appendChild(ping);
+    }
+
     const pin = document.createElement('div');
     pin.style.width = '12px';
     pin.style.height = '12px';
@@ -73,20 +85,26 @@ function createStopPin(colour = '#ffffff') {
     pin.style.backgroundColor = colour;
     pin.style.border = '2px solid black';
     pin.style.boxShadow = '0 0 2px rgba(0,0,0,0.5)';
-    // Vertically align
-    pin.style.transform = 'translateY(50%)'
-    return pin;
+    pin.style.position = 'absolute';
+    pin.style.top = '0';
+    pin.style.left = '0';
+    wrapper.style.transform = 'translateY(50%)';
+
+    wrapper.appendChild(pin);
+
+    return wrapper;
 }
 
 
+
 const Stops2 = ({ map, routeIds }) => {
-    
+
     const [selectedStop, setSelectedStop] = useState(null);
 
     const { stopsById, stopsByRoute } = useStops();
 
     const markersRef = useRef(new Map());
-    
+
     // Track the selected marker to reset colour after another is clicked etc
     const selectedMarkerRef = useRef(null);
 
@@ -130,17 +148,17 @@ const Stops2 = ({ map, routeIds }) => {
                     title: stop.name,
                     content: createStopPin(),
                 });
-                
+
                 marker.addListener('click', () => {
                     // Reset previously selected marker
                     if (selectedMarkerRef.current) {
                         selectedMarkerRef.current.content = createStopPin();
                     }
-                    
+
                     // Change the marker's content to a new pin with a different color
-                    marker.content = createStopPin('#ff0000'); // red on click
+                    marker.content = createStopPin('#ff0000', true); // red on click
                     selectedMarkerRef.current = marker;
-                    
+
                     setSelectedStop(stop);
                 });
 
