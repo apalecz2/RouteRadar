@@ -73,6 +73,8 @@ function createStopPin(colour = '#ffffff') {
     pin.style.backgroundColor = colour;
     pin.style.border = '2px solid black';
     pin.style.boxShadow = '0 0 2px rgba(0,0,0,0.5)';
+    // Vertically align
+    pin.style.transform = 'translateY(50%)'
     return pin;
 }
 

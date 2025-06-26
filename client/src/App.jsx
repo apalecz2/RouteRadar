@@ -12,6 +12,8 @@ import Arrivals from './components/ArrivalsTest/Arrivals';
 
 import Menu2 from './components/Menu2'
 
+import TimeDisplay from './components/TimeDisplay';
+
 function App() {
     const [map, setMap] = useState(null);
     const [routeIds, setRouteIds] = useState([]);
@@ -26,6 +28,7 @@ function App() {
             {/*<Menu routeIds={routeIds} setRouteIds={setRouteIds} />*/}
             {/*<RouteSelection routeIds={routeIds} setRouteIds={setRouteIds}/>*/}
             <Menu2 routeIds={routeIds} setRouteIds={setRouteIds}/>
+            <TimeDisplay />
         </div>
     );
 }

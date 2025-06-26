@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+
+/* For the stop popup used in StopPopup.jsx */
 @keyframes slide-up {
     from {
         transform: translate(-50%, 100%);
@@ -30,4 +32,19 @@
 
 .animate-slide-down {
     animation: slide-down 0.3s ease-in forwards;
+}
+
+/* Time fade animation used in TimeDisplay.jsx */
+@keyframes fade-pulse {
+    0% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0.65;
+    }
+}
+
+.animate-fade-pulse {
+    animation: fade-pulse 1s ease-in-out;
 }

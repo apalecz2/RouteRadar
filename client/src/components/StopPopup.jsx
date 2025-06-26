@@ -68,7 +68,7 @@ const StopPopup = ({ stop, onClose }) => {
     return (
         <div
             className={`
-        fixed bottom-6 left-1/2 
+        fixed bottom-[2.5rem] left-1/2 
         w-[90%] md:w-[550px] max-w-[95%] p-6 z-50
         rounded-2xl md:rounded-3xl
         bg-white/10 dark:bg-white/5 backdrop-blur-2xl
