@@ -9,8 +9,12 @@ const processStops = (stops) => {
 
     for (const stop of stops) {
         stopsById.set(stop.stop_id, stop);
+        console.log(stop)
 
-        for (const route of stop.routes) {
+        for (let route of stop.routes) {
+            // Extract the route number, disregard the A, B suffix
+            route = route.match(/^\d+/)[0]
+            console.log(route)
             if (!stopsByRoute.has(route)) {
                 stopsByRoute.set(route, new Set());
             }
