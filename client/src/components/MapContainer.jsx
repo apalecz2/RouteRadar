@@ -28,6 +28,8 @@ const MapContainer = ({ onMapLoad }) => {
                 center: londonCoords,
                 zoom: 12,
                 disableDefaultUI: true,
+                gestureHandling: "greedy",
+                draggable: true, 
                 restriction: {
                     latLngBounds: mapBounds,
                     strictBounds: true,
