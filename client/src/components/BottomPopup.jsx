@@ -4,6 +4,7 @@ const BottomPopup = ({ open, onClose, children }) => {
 
     const [visible, setVisible] = useState(false);
     const [show, setShow] = useState(false);
+    const [content, setContent] = useState(children);
 
     useEffect(() => {
         if (open) {
@@ -11,9 +12,21 @@ const BottomPopup = ({ open, onClose, children }) => {
             setTimeout(() => setVisible(true), 10);
         } else {
             setVisible(false);
-            setTimeout(() => setShow(false), 300);
+            setTimeout(() => {
+                setShow(false);
+                onClose();
+            }, 300);
         }
     }, [open]);
+
+    useEffect(() => {
+        // Optional: fade out/in content
+        setContent(null);
+        const timeout = setTimeout(() => {
+            setContent(children);
+        }, 150); // half of duration for smoother transition
+        return () => clearTimeout(timeout);
+    }, [children]);
 
     if (!show) return null;
 
@@ -35,7 +48,13 @@ const BottomPopup = ({ open, onClose, children }) => {
         >
             <div className="relative z-10">
                 <button
-                    onClick={onClose}
+                    onClick={() => {
+                        setVisible(false);
+                        setTimeout(() => {
+                            setShow(false);
+                            onClose();
+                        }, 300);
+                    }}
                     className="absolute top-2 right-4 text-black text-xl"
                 >
                     ×

@@ -1,8 +1,5 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
 
-import StopPopup from './StopPopup';
-
-
 // Helper to process the json files into maps for quick access after initial load
 const processStops = (stops) => {
     const stopsById = new Map(); // Map<stop_id, stop>
@@ -97,10 +94,7 @@ function createStopPin(colour = '#ffffff', withPing = false) {
 }
 
 
-
-const Stops2 = ({ map, routeIds }) => {
-
-    const [selectedStop, setSelectedStop] = useState(null);
+const Stops2 = ({ map, routeIds, showPopup, activePopup }) => {
 
     const { stopsById, stopsByRoute } = useStops();
 
@@ -118,7 +112,7 @@ const Stops2 = ({ map, routeIds }) => {
             for (const stopId of stopsById.keys()) {
                 stopIds.add(stopId);
             }
-                */
+            */
         } else {
             for (const routeId of routeIds) {
                 const idsForRoute = stopsByRoute.get(routeId);
@@ -131,7 +125,7 @@ const Stops2 = ({ map, routeIds }) => {
     }, [routeIds, stopsByRoute]);
 
     useEffect(() => {
-        
+
         if (!map || stopsById.size === 0 || stopsByRoute.size === 0) return;
 
         // Add new markers that aren't already present
@@ -154,6 +148,7 @@ const Stops2 = ({ map, routeIds }) => {
                     // Reset previously selected marker
                     if (selectedMarkerRef.current) {
                         selectedMarkerRef.current.content = createStopPin();
+                        selectedMarkerRef.current.zIndex = 30;
                     }
 
                     // Change the marker's content to a new pin with a different color
@@ -162,7 +157,8 @@ const Stops2 = ({ map, routeIds }) => {
                     marker.zIndex = 50;
                     selectedMarkerRef.current = marker;
 
-                    setSelectedStop(stop);
+                    //setSelectedStop(stop);
+                    showPopup({ type: 'stop', data: stop });
                 });
 
                 markersRef.current.set(stopId, marker);
@@ -178,15 +174,19 @@ const Stops2 = ({ map, routeIds }) => {
         }
     }, [map, visibleStopIds, stopsById, stopsByRoute]);
 
-    return <StopPopup stop={selectedStop} onClose={() => {
-        setSelectedStop(null);
-        selectedMarkerRef.current.content = createStopPin();
-    }} />;
+    // Watch for when the popup is no longer a stop, to clear the pin styling
+    useEffect(() => {
+        if (activePopup?.type !== 'stop') {
+            // Clear selection visual (reset pin)
+            if (selectedMarkerRef.current) {
+                selectedMarkerRef.current.content = createStopPin();
+                selectedMarkerRef.current = null;
+            }
+        }
+    }, [activePopup]);
 
-
-
+    return null;
 
 }
-
 
 export default Stops2;

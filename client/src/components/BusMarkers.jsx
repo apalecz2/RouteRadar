@@ -1,8 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { gql, useApolloClient } from '@apollo/client';
 
-import BusPopup from './BusPopup';
-
 const VEHICLE_SUBSCRIPTION = gql`
     subscription VehicleUpdates($routeId: String!) {
         vehicleUpdates(routeId: $routeId) {
@@ -24,7 +22,7 @@ const routeColors = {
     '34': 'purple',
 };
 
-const BusMarkers = ({ routeIds, map }) => {
+const BusMarkers = ({ routeIds, map, showPopup }) => {
     const client = useApolloClient();
     const markersRef = useRef({});
     const routeToVehicleMap = useRef({});
@@ -110,9 +108,8 @@ const BusMarkers = ({ routeIds, map }) => {
 
                         markersRef.current[id].addListener('click', () => {
                             
-                            setSelectedBus(vehicle);
+                            showPopup({ type: 'bus', data: vehicle })
                             
-                            console.log(vehicle.RouteId);
                         });
                     }
                 },
@@ -132,16 +129,7 @@ const BusMarkers = ({ routeIds, map }) => {
         };
     }, [routeIds, map]);
     
-    
-    
-
-    return (
-        <>
-            {selectedBus && (
-                <BusPopup bus={selectedBus} onClose={() => setSelectedBus(null)} />
-            )}
-        </>
-    );
+    return null
 };
 
 export default BusMarkers;

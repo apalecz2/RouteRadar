@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react';
 import { gql, useSubscription } from '@apollo/client';
 
-import BottomPopup from './BottomPopup';
-
 const STOP_UPDATES_SUB = gql`
     subscription($stopId: String!) {
         stopUpdates(stopId: $stopId) {
@@ -20,7 +18,7 @@ function formatTime(unixSeconds) {
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
-const StopPopup = ({ stop, onClose }) => {
+const StopPopupContent = ({ stop }) => {
 
     const [activeStop, setActiveStop] = useState(null);
 
@@ -50,9 +48,8 @@ const StopPopup = ({ stop, onClose }) => {
 
     const loadingArrivals = activeStop && !stopDataLive;
 
-
     return (
-        <BottomPopup open={!!stop} onClose={onClose}>
+        <>
             <h2 className="text-lg font-semibold">{activeStop.name}</h2>
             <p className="text-sm text-gray-300">Stop ID: {activeStop.stop_id}</p>
             {activeStop.routes && (
@@ -82,8 +79,8 @@ const StopPopup = ({ stop, onClose }) => {
             ) : (
                 <p className="text-sm text-gray-400 mt-4">No upcoming arrivals</p>
             )}
-        </BottomPopup>
+        </>
     );
 };
 
-export default StopPopup;
+export default StopPopupContent;
