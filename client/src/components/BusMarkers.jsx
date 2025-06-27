@@ -1,17 +1,19 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { gql, useApolloClient } from '@apollo/client';
 
+import BusPopup from './BusPopup';
+
 const VEHICLE_SUBSCRIPTION = gql`
-  subscription VehicleUpdates($routeId: String!) {
-    vehicleUpdates(routeId: $routeId) {
-      RouteId
-      Latitude
-      Longitude
-      Destination
-      VehicleId
-      Bearing
+    subscription VehicleUpdates($routeId: String!) {
+        vehicleUpdates(routeId: $routeId) {
+            RouteId
+            Latitude
+            Longitude
+            Destination
+            VehicleId
+            Bearing
+        }
     }
-  }
 `;
 
 const routeColors = {
@@ -27,6 +29,9 @@ const BusMarkers = ({ routeIds, map }) => {
     const markersRef = useRef({});
     const routeToVehicleMap = useRef({});
     const subscriptionsRef = useRef({});
+    
+    const [selectedBus, setSelectedBus] = useState(null);
+
 
     useEffect(() => {
         if (!map || !window.google?.maps) return;
@@ -104,7 +109,10 @@ const BusMarkers = ({ routeIds, map }) => {
                         })
 
                         markersRef.current[id].addListener('click', () => {
-                            console.log(vehicle.RouteId) // Eventually add window to display what route the selected bus is
+                            
+                            setSelectedBus(vehicle);
+                            
+                            console.log(vehicle.RouteId);
                         });
                     }
                 },
@@ -123,8 +131,17 @@ const BusMarkers = ({ routeIds, map }) => {
             routeToVehicleMap.current = {};
         };
     }, [routeIds, map]);
+    
+    
+    
 
-    return null;
+    return (
+        <>
+            {selectedBus && (
+                <BusPopup bus={selectedBus} onClose={() => setSelectedBus(null)} />
+            )}
+        </>
+    );
 };
 
 export default BusMarkers;
