@@ -17,6 +17,9 @@ const TimeDisplay = () => {
         minute: '2-digit',
         second: '2-digit',
     });
+    
+    // For making the background red slightly
+    // bg-[rgba(255,0,0,0.2)] dark:bg-[rgba(255,0,0,0.2)]
 
     return (
         <div

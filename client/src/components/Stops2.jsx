@@ -67,6 +67,7 @@ const getStopsForRoutes = (routeIds, stopsById, stopsByRoute) => {
 
 function createStopPin(colour = '#ffffff', withPing = false) {
     const wrapper = document.createElement('div');
+    wrapper.className = 'stop-marker-wrapper';
     wrapper.style.position = 'relative';
     wrapper.style.width = '12px';
     wrapper.style.height = '12px';
@@ -78,6 +79,7 @@ function createStopPin(colour = '#ffffff', withPing = false) {
     }
 
     const pin = document.createElement('div');
+    pin.className = 'stop-marker-pin';
     pin.style.width = '12px';
     pin.style.height = '12px';
     pin.style.borderRadius = '50%';
@@ -156,6 +158,8 @@ const Stops2 = ({ map, routeIds }) => {
 
                     // Change the marker's content to a new pin with a different color
                     marker.content = createStopPin('#ff0000', true); // red on click
+                    // Move to front
+                    marker.zIndex = 50;
                     selectedMarkerRef.current = marker;
 
                     setSelectedStop(stop);
