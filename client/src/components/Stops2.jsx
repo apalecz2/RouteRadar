@@ -74,7 +74,6 @@ function createStopPin(colour = '#ffffff', withPing = false) {
     if (withPing) {
         const ping = document.createElement('div');
         ping.className = 'stop-ping';
-        //ping.style.transform = 'translateY(50%)';
         wrapper.appendChild(ping);
     }
 
@@ -130,7 +129,7 @@ const Stops2 = ({ map, routeIds }) => {
     }, [routeIds, stopsByRoute]);
 
     useEffect(() => {
-        console.log(routeIds)
+        
         if (!map || stopsById.size === 0 || stopsByRoute.size === 0) return;
 
         // Add new markers that aren't already present

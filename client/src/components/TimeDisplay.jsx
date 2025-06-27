@@ -21,14 +21,14 @@ const TimeDisplay = () => {
     return (
         <div
             className={`
-        fixed top-6 right-5 md:right-6 z-50
+        fixed top-6 right-[5%] md:right-6 z-40
         px-4 py-2
         rounded-2xl
         bg-white/10 dark:bg-white/5
         backdrop-blur-2xl
         border border-black/30 dark:border-black/30 shadow-xl
         text-black dark:text-black
-        font-mono text-sm md:text-base
+        font-mono text-base md:text-base
       `}
         >
             <span key={animateKey} className="animate-fade-pulse block">

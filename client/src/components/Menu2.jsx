@@ -91,7 +91,7 @@ const MenuButton = ({ onClick, isOpen }) => (
     <button
       onClick={onClick}
       className={`
-        fixed top-6 left-5 md:left-6 z-50
+        fixed top-6 left-[5%] md:left-6 z-50
         p-2 md:p-2
         rounded-2xl
         bg-white/10 dark:bg-white/5
