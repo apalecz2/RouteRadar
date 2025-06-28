@@ -10,6 +10,7 @@ const VEHICLE_SUBSCRIPTION = gql`
             Destination
             VehicleId
             Bearing
+            timestamp
         }
     }
 `;

@@ -1,6 +1,8 @@
 
 const BusPopupContent = ({ bus }) => {
     if (!bus) return null;
+    
+    let time = new Date(bus.timestamp * 1000).toLocaleString()
 
     return (
         <>
@@ -10,6 +12,7 @@ const BusPopupContent = ({ bus }) => {
             <p className="text-sm text-black mb-1">Lat: {bus.Latitude.toFixed(5)}</p>
             <p className="text-sm text-black mb-1">Lng: {bus.Longitude.toFixed(5)}</p>
             <p className="text-sm text-black">Bearing: {bus.Bearing}°</p>
+            <p className="text-sm text-black">Time Updated: {time}</p>
         </>
     );
 };

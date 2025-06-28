@@ -115,6 +115,8 @@ import fetch from 'node-fetch';
 import cors from 'cors';
 import { EventEmitter } from 'events';
 
+let isShuttingDown = false;
+
 const VEHICLE_URL = 'http://gtfs.ltconline.ca/Vehicle/VehiclePositions.json';
 const TRIP_UPDATE_URL = 'http://gtfs.ltconline.ca/TripUpdate/TripUpdates.json';
 
@@ -132,6 +134,7 @@ const typeDefs = `
         Destination: String
         VehicleId: String
         Bearing: Float
+        timestamp: Int!
     }
     
     type StopArrival {
@@ -140,6 +143,7 @@ const typeDefs = `
         tripId: String!
         arrivalTime: Int!
         delaySeconds: Int
+        timestamp: Int!
     }
 
     type Query {
@@ -229,7 +233,7 @@ let lastTripTimestamp = null;
 
 async function predictivePollingLoop() {
 
-    while (true) {
+    while (!isShuttingDown) {
         if (lastVehicleTimestamp === null) {
             // First poll — no delay
             console.log("Initial fetch...");
@@ -304,7 +308,6 @@ async function handleData(vehicleJson, tripJson) {
     for (const entity of vehicleJson.entity) {
         const v = entity.vehicle;
         if (!v?.trip?.route_id || !v?.position?.latitude || !v?.position?.longitude) continue;
-
         const payload = {
             RouteId: v.trip.route_id,
             Latitude: v.position.latitude,
@@ -312,7 +315,11 @@ async function handleData(vehicleJson, tripJson) {
             Destination: v.trip.trip_id,
             VehicleId: v.vehicle.id,
             Bearing: v.position.bearing,
+            timestamp: vehicleJson.header?.timestamp ?? 0, // fall back to 0 if dne
         };
+        if (payload.timestamp == 0) {
+            console.log('0')
+        }
 
         if (!latestVehicleData.has(payload.RouteId)) {
             latestVehicleData.set(payload.RouteId, []);
@@ -346,6 +353,7 @@ async function handleData(vehicleJson, tripJson) {
                 tripId,
                 arrivalTime: arrival,
                 delaySeconds: delay,
+                timestamp: tripJson.header?.timestamp ?? 0, // fall back to 0 if dne
             };
 
             eventEmitter.emit(`${VEHICLE_UPDATE}_STOP_${stopId}`, stopArrivalPayload);
@@ -361,10 +369,19 @@ httpServer.listen(PORT, () => {
 });
 
 // Shut down cleanly
-process.on('SIGINT', () => {
+process.on('SIGINT', async () => {
+    console.log('\nShutting down...');
+    isShuttingDown = true;
+
     wsServer.close();
     httpServer.close(() => {
         console.log('HTTP server closed');
         process.exit(0);
     });
+
+    // Optional: Wait a few seconds in case there's ongoing polling
+    setTimeout(() => {
+        console.log('Force exiting...');
+        process.exit(1);
+    }, 5000);
 });
