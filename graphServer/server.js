@@ -118,7 +118,6 @@ import { EventEmitter } from 'events';
 const VEHICLE_URL = 'http://gtfs.ltconline.ca/Vehicle/VehiclePositions.json';
 const TRIP_UPDATE_URL = 'http://gtfs.ltconline.ca/TripUpdate/TripUpdates.json';
 
-const POLL_INTERVAL = 5000;
 const VEHICLE_UPDATE = 'VEHICLE_UPDATE';
 
 const eventEmitter = new EventEmitter();
@@ -227,6 +226,63 @@ const wsServer = new WebSocketServer({
 useServer({ schema }, wsServer);
 
 
+
+let lastVehicleTimestamp = 0;
+let lastTripTimestamp = 0;
+let averageUpdateInterval = 5000; // Start with 5 seconds
+let pollTimeout = null;
+
+
+async function pollAndScheduleNext() {
+    try {
+        const [vehicleRes, tripRes] = await Promise.all([
+            fetch(VEHICLE_URL),
+            fetch(TRIP_UPDATE_URL),
+        ]);
+
+        const [vehicleJson, tripJson] = await Promise.all([
+            vehicleRes.json(),
+            tripRes.json(),
+        ]);
+
+        const vehicleTimestamp = vehicleJson.header?.timestamp;
+        const tripTimestamp = tripJson.header?.timestamp;
+        const intervals = [];
+        
+        console.log(`[${new Date().toISOString()}] Vehicle timestamp: ${vehicleTimestamp}, Trip timestamp: ${tripTimestamp}`);
+
+
+        if (vehicleTimestamp && lastVehicleTimestamp && vehicleTimestamp !== lastVehicleTimestamp) {
+            intervals.push(vehicleTimestamp - lastVehicleTimestamp);
+        }
+
+        if (tripTimestamp && lastTripTimestamp && tripTimestamp !== lastTripTimestamp) {
+            intervals.push(tripTimestamp - lastTripTimestamp);
+        }
+
+        if (vehicleTimestamp) lastVehicleTimestamp = vehicleTimestamp;
+        if (tripTimestamp) lastTripTimestamp = tripTimestamp;
+
+        if (intervals.length > 0) {
+            const avg = intervals.reduce((a, b) => a + b, 0) / intervals.length;
+            averageUpdateInterval = Math.min(Math.max(avg * 1000, 1000), 15000); // Clamp to [1s, 15s]
+            console.log(`Adjusted polling interval to ${averageUpdateInterval.toFixed(0)}ms`);
+        }
+
+        await handleData(vehicleJson, tripJson);
+    } catch (err) {
+        console.error('Polling error:', err.message);
+    } finally {
+        console.log(averageUpdateInterval)
+        pollTimeout = setTimeout(pollAndScheduleNext, averageUpdateInterval);
+    }
+}
+
+
+
+
+
+/*
 async function pollAndPublish() {
     try {
         const [vehicleRes, tripRes] = await Promise.all([
@@ -265,7 +321,7 @@ async function pollAndPublish() {
                 VehicleId: v.vehicle.id,
                 Bearing: v.position.bearing,
             };
-            
+
             // Store route-wise
             if (!latestVehicleData.has(payload.RouteId)) {
                 latestVehicleData.set(payload.RouteId, []);
@@ -315,9 +371,80 @@ async function pollAndPublish() {
         console.error('Polling error:', err.message);
     }
 }
+    */
 
 
-setInterval(pollAndPublish, POLL_INTERVAL);
+
+async function handleData(vehicleJson, tripJson) {
+    latestVehicleData.clear();
+
+    const vehicleToStops = new Map();
+    for (const entity of tripJson.entity) {
+        const trip = entity.trip_update;
+        const vehicleId = trip?.vehicle?.id;
+        if (!vehicleId || !trip?.stop_time_update) continue;
+
+        const stopIds = trip.stop_time_update.map((s) => s.stop_id);
+        vehicleToStops.set(vehicleId, stopIds);
+    }
+
+    for (const entity of vehicleJson.entity) {
+        const v = entity.vehicle;
+        if (!v?.trip?.route_id || !v?.position?.latitude || !v?.position?.longitude) continue;
+
+        const payload = {
+            RouteId: v.trip.route_id,
+            Latitude: v.position.latitude,
+            Longitude: v.position.longitude,
+            Destination: v.trip.trip_id,
+            VehicleId: v.vehicle.id,
+            Bearing: v.position.bearing,
+        };
+
+        if (!latestVehicleData.has(payload.RouteId)) {
+            latestVehicleData.set(payload.RouteId, []);
+        }
+        latestVehicleData.get(payload.RouteId).push(payload);
+        eventEmitter.emit(`${VEHICLE_UPDATE}_${payload.RouteId}`, payload);
+    }
+
+    const emittedArrivals = new Set();
+    for (const entity of tripJson.entity) {
+        const tripUpdate = entity.trip_update;
+        if (!tripUpdate?.trip?.trip_id || !tripUpdate?.stop_time_update) continue;
+
+        const tripId = tripUpdate.trip.trip_id;
+        const routeId = tripUpdate.trip.route_id;
+
+        for (const stu of tripUpdate.stop_time_update) {
+            const stopId = stu.stop_id;
+            const arrival = stu.arrival?.time;
+            const delay = stu.arrival?.delay ?? 0;
+
+            if (!stopId || !arrival) continue;
+
+            const uniqueKey = `${tripId}_${stopId}`;
+            if (emittedArrivals.has(uniqueKey)) continue;
+            emittedArrivals.add(uniqueKey);
+
+            const stopArrivalPayload = {
+                stopId,
+                routeId,
+                tripId,
+                arrivalTime: arrival,
+                delaySeconds: delay,
+            };
+
+            eventEmitter.emit(`${VEHICLE_UPDATE}_STOP_${stopId}`, stopArrivalPayload);
+        }
+    }
+}
+
+
+pollAndScheduleNext();
+
+
+//setInterval(pollAndPublish, POLL_INTERVAL);
 
 const PORT = process.env.PORT || 4000;
 httpServer.listen(PORT, () => {
