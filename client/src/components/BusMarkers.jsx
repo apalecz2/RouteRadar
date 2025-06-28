@@ -23,7 +23,7 @@ const routeColors = {
     '34': 'purple',
 };
 
-const BusMarkers = ({ routeIds, map, showPopup }) => {
+const BusMarkers = ({ routeIds, map, showPopup, updatePopupData }) => {
     const client = useApolloClient();
     const markersRef = useRef({});
     const routeToVehicleMap = useRef({});
@@ -84,6 +84,7 @@ const BusMarkers = ({ routeIds, map, showPopup }) => {
                             markerContent.style.transform = `rotate(${vehicle.Bearing || 0}deg)`;
                         }
                         existingMarker.position = pos;
+                        existingMarker.vehicleData = vehicle;
 
                     } else {
                         const color = routeColors[routeId] || 'gray';
@@ -100,19 +101,34 @@ const BusMarkers = ({ routeIds, map, showPopup }) => {
                          
                         `;
                         iconElement.style.transform = 'translateY(50%)'   // Centers marker vertically
+                        /*
                         markersRef.current[id] = new AdvancedMarkerElement({
                             position: pos,
                             map,
                             title: vehicle.Destination,
                             content: iconElement,
                         })
+                            */
+                        
+                        const marker = new AdvancedMarkerElement({
+                            position: pos,
+                            map,
+                            title: vehicle.Destination,
+                            content: iconElement,
+                        })
+                        marker.vehicleData = vehicle;
 
-                        markersRef.current[id].addListener('click', () => {
+                        marker.addListener('click', () => {
                             
-                            showPopup({ type: 'bus', data: vehicle })
+                            showPopup({ type: 'bus', data: marker.vehicleData })
                             
                         });
+                        
+                        markersRef.current[id] = marker;
+                        
+                        
                     }
+                    updatePopupData?.(vehicle);
                 },
             });
 

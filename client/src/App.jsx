@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 import MapContainer from './components/MapContainer';
 import BusMarkers from './components/BusMarkers';
@@ -37,17 +37,30 @@ function App() {
             setActivePopup(popupData);
         }
     };
+    
+    const updatePopupData = useCallback((vehicle) => {
+        setActivePopup(prevActivePopup => {
+            if (prevActivePopup?.type === 'bus' && prevActivePopup.data.VehicleId === vehicle.VehicleId) {
+                return { ...prevActivePopup, data: vehicle };
+            }
+            return prevActivePopup; // Important: always return the previous state if no update is needed
+        });
+    }, []);
+    
+    const popupIdentity = activePopup ? `${activePopup.type}:${activePopup.data?.StopId || activePopup.data?.VehicleId}` : null;
+
 
     return (
         <div className="relative w-full h-screen">
             <MapContainer onMapLoad={setMap} />
-            {map && <BusMarkers map={map} routeIds={routeIds} showPopup={showPopup} />}
+            {map && <BusMarkers map={map} routeIds={routeIds} showPopup={showPopup} updatePopupData={updatePopupData} />}
             {map && <Routes map={map} routeIds={routeIds} />}
             {map && <Stops2 map={map} routeIds={routeIds.map(val => val.replace(/^0+/, ''))} showPopup={showPopup} activePopup={activePopup} />}
 
             {activePopup && (
                 <BottomPopup
                     open={!!activePopup}
+                    popupType={popupIdentity}
                     onClose={() => setActivePopup(null)}
                 >
                     {activePopup.type === 'bus' && (

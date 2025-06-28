@@ -36,71 +36,92 @@ const CloseButton = ({ onClick }) => (
 
 
 
+const BottomPopup = ({ open, popupType, onClose, children }) => {
+    const [shouldRender, setShouldRender] = useState(false);
+    const [isAnimating, setIsAnimating] = useState(false);
+    const [currentContent, setCurrentContent] = useState(null);
+    const [lastPopupType, setLastPopupType] = useState(null);
 
-
-const BottomPopup = ({ open, onClose, children }) => {
-
-    const [visible, setVisible] = useState(false);
-    const [show, setShow] = useState(false);
-    const [content, setContent] = useState(children);
+    const animationDuration = 300;
 
     useEffect(() => {
         if (open) {
-            setShow(true);
-            setTimeout(() => setVisible(true), 10);
+            const isNewPopup = popupType !== lastPopupType;
+
+            setShouldRender(true);
+
+            if (isNewPopup || !currentContent) {
+                // Animate only when switching to a different popup
+                setIsAnimating(false);
+                const timeoutId = setTimeout(() => {
+                    setCurrentContent(children);
+                    setIsAnimating(true);
+                    setLastPopupType(popupType);
+                }, currentContent ? animationDuration : 10);
+                return () => clearTimeout(timeoutId);
+            } else {
+                // Same popup ID — update content silently (no animation)
+                setCurrentContent(children);
+            }
         } else {
-            setVisible(false);
-            setTimeout(() => {
-                setShow(false);
+            // Closing popup
+            setIsAnimating(false);
+            const timeoutId = setTimeout(() => {
+                setShouldRender(false);
+                setCurrentContent(null);
+                setLastPopupType(null);
                 onClose();
-            }, 300);
+            }, animationDuration);
+            return () => clearTimeout(timeoutId);
         }
-    }, [open]);
+    }, [open, popupType]);
 
+    // ✨ This effect ensures live updates update the popup content
     useEffect(() => {
-        // Optional: fade out/in content
-        setContent(null);
-        const timeout = setTimeout(() => {
-            setContent(children);
-        }, 150); // half of duration for smoother transition
-        return () => clearTimeout(timeout);
-    }, [children]);
+        if (open && popupType === lastPopupType) {
+            setCurrentContent(children);
+        }
+    }, [children]); // 🧠 Only runs if content changes for same popup
 
-    if (!show) return null;
+    if (!shouldRender) return null;
 
     const close = () => {
-        setVisible(false);
-        setTimeout(() => {
-            setShow(false);
+        setIsAnimating(false);
+        const timeoutId = setTimeout(() => {
+            setShouldRender(false);
+            setCurrentContent(null);
+            setLastPopupType(null);
             onClose();
-        }, 300);
-    }
-
+        }, animationDuration);
+        return () => clearTimeout(timeoutId);
+    };
 
     return (
         <div
             className={`
-            fixed bottom-[2.5rem] left-1/2 
-            w-[90%] md:w-[550px] max-w-[95%] p-6 z-50
-            rounded-2xl md:rounded-3xl
-            bg-white/10 dark:bg-white/5 backdrop-blur-2xl
-            border border-white/30 dark:border-white/15 shadow-2xl
-            before:content-[''] before:absolute before:inset-0
-            before:rounded-2xl md:before:rounded-3xl
-            before:bg-gradient-to-br before:from-white/40 before:to-white/0
-            before:pointer-events-none
-            transition-all duration-300
-            ${visible ? 'animate-slide-up' : 'animate-slide-down'}
-        `}
+                fixed bottom-[2.5rem] left-1/2 
+                w-[90%] md:w-[550px] max-w-[95%] p-6 z-50
+                rounded-2xl md:rounded-3xl
+                bg-white/10 dark:bg-white/5 backdrop-blur-2xl
+                border border-white/30 dark:border-white/15 shadow-2xl
+                before:content-[''] before:absolute before:inset-0
+                before:rounded-2xl md:before:rounded-3xl
+                before:bg-gradient-to-br before:from-white/40 before:to-white/0
+                before:pointer-events-none
+                transition-all duration-300 transform
+                ${isAnimating ? 'animate-slide-up' : 'animate-slide-down'}
+            `}
+            style={{
+                opacity: isAnimating ? 1 : 0,
+                pointerEvents: isAnimating ? 'auto' : 'none',
+            }}
         >
             <div className="relative z-10 text-left">
-                
                 <CloseButton onClick={close} />
-                {children}
+                {currentContent}
             </div>
         </div>
     );
-
-}
+};
 
 export default BottomPopup

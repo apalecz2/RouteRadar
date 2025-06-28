@@ -1,8 +1,7 @@
-
 const BusPopupContent = ({ bus }) => {
     if (!bus) return null;
-    
-    let time = new Date(bus.timestamp * 1000).toLocaleString()
+
+    const time = new Date(bus.timestamp * 1000).toLocaleString();
 
     return (
         <>
