@@ -125,35 +125,31 @@ const eventEmitter = new EventEmitter();
 const latestVehicleData = new Map(); // Key: routeId, Value: Array of vehicle objects
 
 const typeDefs = `
-  type Vehicle {
-    RouteId: String
-    Latitude: Float
-    Longitude: Float
-    Destination: String
-    VehicleId: String
-    Bearing: Float
-  }
+    type Vehicle {
+        RouteId: String
+        Latitude: Float
+        Longitude: Float
+        Destination: String
+        VehicleId: String
+        Bearing: Float
+    }
     
-  type StopArrival {
-    stopId: String!
-    routeId: String!
-    tripId: String!
-    arrivalTime: Int!
-    delaySeconds: Int
-  }
+    type StopArrival {
+        stopId: String!
+        routeId: String!
+        tripId: String!
+        arrivalTime: Int!
+        delaySeconds: Int
+    }
 
-  type Query {
-    _empty: String
-  }
+    type Query {
+        _empty: String
+    }
 
-  type Subscription {
-    vehicleUpdates(routeId: String!): Vehicle
-  }
-  
-  type Subscription {
-    vehicleUpdates(routeId: String!): Vehicle
-    stopUpdates(stopId: String!): [StopArrival!]!
-  }
+    type Subscription {
+        vehicleUpdates(routeId: String!): Vehicle
+        stopUpdates(stopId: String!): [StopArrival!]!
+    }
 `;
 
 const resolvers = {
@@ -227,153 +223,70 @@ useServer({ schema }, wsServer);
 
 
 
-let lastVehicleTimestamp = 0;
-let lastTripTimestamp = 0;
-let averageUpdateInterval = 5000; // Start with 5 seconds
-let pollTimeout = null;
+const UPDATE_PERIOD_SEC = 30;
+let lastVehicleTimestamp = null;
+let lastTripTimestamp = null;
 
+async function predictivePollingLoop() {
 
-async function pollAndScheduleNext() {
-    try {
-        const [vehicleRes, tripRes] = await Promise.all([
-            fetch(VEHICLE_URL),
-            fetch(TRIP_UPDATE_URL),
-        ]);
-
-        const [vehicleJson, tripJson] = await Promise.all([
-            vehicleRes.json(),
-            tripRes.json(),
-        ]);
-
-        const vehicleTimestamp = vehicleJson.header?.timestamp;
-        const tripTimestamp = tripJson.header?.timestamp;
-        const intervals = [];
-        
-        console.log(`[${new Date().toISOString()}] Vehicle timestamp: ${vehicleTimestamp}, Trip timestamp: ${tripTimestamp}`);
-
-
-        if (vehicleTimestamp && lastVehicleTimestamp && vehicleTimestamp !== lastVehicleTimestamp) {
-            intervals.push(vehicleTimestamp - lastVehicleTimestamp);
+    while (true) {
+        if (lastVehicleTimestamp === null) {
+            // First poll — no delay
+            console.log("Initial fetch...");
+        } else {
+            const now = Math.floor(Date.now() / 1000);
+            const nextExpected = lastVehicleTimestamp + UPDATE_PERIOD_SEC;
+            const delay = Math.max(0, (nextExpected - now) * 1000 + 200); // 0.5s early
+            console.log(`Waiting ${delay}ms for next expected update at ${nextExpected}`);
+            await new Promise(res => setTimeout(res, delay));
         }
 
-        if (tripTimestamp && lastTripTimestamp && tripTimestamp !== lastTripTimestamp) {
-            intervals.push(tripTimestamp - lastTripTimestamp);
-        }
+        let updated = false;
 
-        if (vehicleTimestamp) lastVehicleTimestamp = vehicleTimestamp;
-        if (tripTimestamp) lastTripTimestamp = tripTimestamp;
+        for (let attempt = 0; attempt < 3; attempt++) {
+            try {
+                //console.log("Polling...");
+                const [vehicleRes, tripRes] = await Promise.all([
+                    fetch(VEHICLE_URL),
+                    fetch(TRIP_UPDATE_URL),
+                ]);
 
-        if (intervals.length > 0) {
-            const avg = intervals.reduce((a, b) => a + b, 0) / intervals.length;
-            averageUpdateInterval = Math.min(Math.max(avg * 1000, 1000), 15000); // Clamp to [1s, 15s]
-            console.log(`Adjusted polling interval to ${averageUpdateInterval.toFixed(0)}ms`);
-        }
+                const [vehicleJson, tripJson] = await Promise.all([
+                    vehicleRes.json(),
+                    tripRes.json(),
+                ]);
 
-        await handleData(vehicleJson, tripJson);
-    } catch (err) {
-        console.error('Polling error:', err.message);
-    } finally {
-        console.log(averageUpdateInterval)
-        pollTimeout = setTimeout(pollAndScheduleNext, averageUpdateInterval);
-    }
-}
+                const vehicleTimestamp = vehicleJson.header?.timestamp;
+                const tripTimestamp = tripJson.header?.timestamp;
+                const now = Math.floor(Date.now() / 1000);
 
+                console.log(`[${now}] Attempt ${attempt + 1}, Vehicle TS: ${vehicleTimestamp}, Trip TS: ${tripTimestamp}`);
 
+                const isNewVehicle = vehicleTimestamp && vehicleTimestamp !== lastVehicleTimestamp;
+                const isNewTrip = tripTimestamp && tripTimestamp !== lastTripTimestamp;
 
-
-
-/*
-async function pollAndPublish() {
-    try {
-        const [vehicleRes, tripRes] = await Promise.all([
-            fetch(VEHICLE_URL),
-            fetch(TRIP_UPDATE_URL),
-        ]);
-
-        const [vehicleJson, tripJson] = await Promise.all([
-            vehicleRes.json(),
-            tripRes.json(),
-        ]);
-
-        latestVehicleData.clear();
-
-        // Build a map: vehicleId => stop_ids[]
-        const vehicleToStops = new Map();
-
-        for (const entity of tripJson.entity) {
-            const trip = entity.trip_update;
-            const vehicleId = trip?.vehicle?.id;
-            if (!vehicleId || !trip.stop_time_update) continue;
-
-            const stopIds = trip.stop_time_update.map(update => update.stop_id);
-            vehicleToStops.set(vehicleId, stopIds);
-        }
-
-        for (const entity of vehicleJson.entity) {
-            const v = entity.vehicle;
-            if (!v?.trip?.route_id || !v?.position?.latitude || !v?.position?.longitude) continue;
-
-            const payload = {
-                RouteId: v.trip.route_id,
-                Latitude: v.position.latitude,
-                Longitude: v.position.longitude,
-                Destination: v.trip.trip_id,
-                VehicleId: v.vehicle.id,
-                Bearing: v.position.bearing,
-            };
-
-            // Store route-wise
-            if (!latestVehicleData.has(payload.RouteId)) {
-                latestVehicleData.set(payload.RouteId, []);
-            }
-            latestVehicleData.get(payload.RouteId).push(payload);
-
-            // Emit route-specific update
-            eventEmitter.emit(`${VEHICLE_UPDATE}_${payload.RouteId}`, payload);
-
-            // Track already emitted arrivals during this poll
-            const emittedArrivals = new Set();
-
-            for (const entity of tripJson.entity) {
-                const tripUpdate = entity.trip_update;
-                if (!tripUpdate?.trip?.trip_id || !tripUpdate?.stop_time_update) continue;
-
-                const tripId = tripUpdate.trip.trip_id;
-                const routeId = tripUpdate.trip.route_id;
-
-                for (const stu of tripUpdate.stop_time_update) {
-                    const stopId = stu.stop_id;
-                    const arrival = stu.arrival?.time;
-                    const delay = stu.arrival?.delay ?? 0;
-
-                    if (!stopId || !arrival) continue;
-
-                    const uniqueKey = `${tripId}_${stopId}`;
-                    if (emittedArrivals.has(uniqueKey)) continue;
-                    emittedArrivals.add(uniqueKey);
-
-                    const stopArrivalPayload = {
-                        stopId,
-                        routeId,
-                        tripId,
-                        arrivalTime: arrival,
-                        delaySeconds: delay,
-                    };
-
-                    eventEmitter.emit(`${VEHICLE_UPDATE}_STOP_${stopId}`, stopArrivalPayload);
+                if (isNewVehicle && isNewTrip) {
+                    lastVehicleTimestamp = vehicleTimestamp;
+                    lastTripTimestamp = tripTimestamp;
+                    await handleData(vehicleJson, tripJson);
+                    updated = true;
+                    break;
                 }
+            } catch (err) {
+                console.error('Polling error:', err.message);
+                // Allow retrys on errors
+                if (attempt === 2) break;
             }
 
-
+            // Retry after 1 second
+            await new Promise(res => setTimeout(res, 1000));
         }
 
-    } catch (err) {
-        console.error('Polling error:', err.message);
+        if (!updated) {
+            console.log(`[${new Date().toISOString()}] No new data detected this cycle.`);
+        }
     }
 }
-    */
-
-
 
 async function handleData(vehicleJson, tripJson) {
     latestVehicleData.clear();
@@ -440,13 +353,18 @@ async function handleData(vehicleJson, tripJson) {
     }
 }
 
-
-pollAndScheduleNext();
-
-
-//setInterval(pollAndPublish, POLL_INTERVAL);
+predictivePollingLoop();
 
 const PORT = process.env.PORT || 4000;
 httpServer.listen(PORT, () => {
     console.log(`Server ready at http://localhost:${PORT}/graphql`);
+});
+
+// Shut down cleanly
+process.on('SIGINT', () => {
+    wsServer.close();
+    httpServer.close(() => {
+        console.log('HTTP server closed');
+        process.exit(0);
+    });
 });
