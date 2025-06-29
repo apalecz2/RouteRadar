@@ -1,3 +1,4 @@
+import { act } from 'react';
 import { useEffect, useRef, useState, useMemo } from 'react';
 
 // Helper to process the json files into maps for quick access after initial load
@@ -150,7 +151,6 @@ const Stops2 = ({ map, routeIds, showPopup, activePopup }) => {
                         selectedMarkerRef.current.content = createStopPin();
                         selectedMarkerRef.current.zIndex = 30;
                     }
-
                     // Change the marker's content to a new pin with a different color
                     marker.content = createStopPin('#ff0000', true); // red on click
                     // Move to front
@@ -176,7 +176,7 @@ const Stops2 = ({ map, routeIds, showPopup, activePopup }) => {
 
     // Watch for when the popup is no longer a stop, to clear the pin styling
     useEffect(() => {
-        if (activePopup?.type !== 'stop') {
+        if (activePopup?.type !== 'stop' & activePopup != null) {
             // Clear selection visual (reset pin)
             if (selectedMarkerRef.current) {
                 selectedMarkerRef.current.content = createStopPin();

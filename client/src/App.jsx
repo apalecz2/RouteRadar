@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 import MapContainer from './components/MapContainer';
 import BusMarkers from './components/BusMarkers';
@@ -22,13 +22,25 @@ function App() {
     const [popupQueue, setPopupQueue] = useState(null);
     
     const [selectedBus, setSelectedBus] = useState(null);
+    
+    const [isClosing, setIsClosing] = useState(false);
+    
+    const lastPopupRef = useRef(null);
+    useEffect(() => {
+        // Always store the most recently intended popup (even if it's queued)
+        if (activePopup) {
+            lastPopupRef.current = activePopup;
+        } else if (popupQueue) {
+            lastPopupRef.current = popupQueue;
+        }
+    }, [activePopup, popupQueue]);
 
     useEffect(() => {
-        if (activePopup === null && popupQueue) {
+        if (activePopup === null && popupQueue && !isClosing) {
             setActivePopup(popupQueue);
             setPopupQueue(null);
         }
-    }, [activePopup, popupQueue]);
+    }, [activePopup, popupQueue, isClosing]);
 
     const showPopup = useCallback((popupData) => {
         if (popupData.type === 'bus') {
@@ -36,18 +48,31 @@ function App() {
         } else {
             setSelectedBus(null);
         }
-        
-        // We use the "functional update" form of setState here. This lets us
-        // get the current state without needing to list it as a dependency.
+    
         setActivePopup(currentActivePopup => {
             if (currentActivePopup) {
                 setPopupQueue(popupData);
-                return null;
+                setIsClosing(true); // trigger close animation first
+                return currentActivePopup; // keep current popup rendered
             } else {
+                lastPopupRef.current = popupData;
                 return popupData;
             }
         });
     }, []);
+    
+    
+    useEffect(() => {
+        if (isClosing) {
+            // After animation duration, fully close popup
+            const timeout = setTimeout(() => {
+                setActivePopup(null);
+                setIsClosing(false);
+            }, 300); // must match animation duration
+    
+            return () => clearTimeout(timeout);
+        }
+    }, [isClosing]);
     
     const handleClosePopup = useCallback(() => {
         setActivePopup(null);
@@ -73,17 +98,17 @@ function App() {
             {map && <Routes map={map} routeIds={routeIds} />}
             {map && <Stops2 map={map} routeIds={routeIds.map(val => val.replace(/^0+/, ''))} showPopup={showPopup} activePopup={activePopup} />}
 
-            {activePopup && (
+            {(activePopup || isClosing) && (
                 <BottomPopup
-                    open={!!activePopup}
+                    open={!isClosing && !!activePopup}
                     popupType={popupIdentity}
                     onClose={handleClosePopup}
                 >
-                    {activePopup.type === 'bus' && (
-                        <BusPopupContent bus={activePopup.data} />
+                    {lastPopupRef.current?.type === 'bus' && (
+                        <BusPopupContent bus={lastPopupRef.current.data} />
                     )}
-                    {activePopup.type === 'stop' && (
-                        <StopPopupContent stop={activePopup.data} />
+                    {lastPopupRef.current?.type === 'stop' && (
+                        <StopPopupContent stop={lastPopupRef.current.data} />
                     )}
                 </BottomPopup>
             )}
