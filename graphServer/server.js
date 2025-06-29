@@ -125,6 +125,7 @@ const VEHICLE_UPDATE = 'VEHICLE_UPDATE';
 const eventEmitter = new EventEmitter();
 
 const latestVehicleData = new Map(); // Key: routeId, Value: Array of vehicle objects
+const latestArrivalData = new Map(); 
 
 const typeDefs = `
     type Vehicle {
@@ -192,6 +193,14 @@ const resolvers = {
                 const queue = [];
                 const handler = (payload) => queue.push(payload);
                 eventEmitter.on(`${VEHICLE_UPDATE}_STOP_${stopId}`, handler);
+                
+                if (latestArrivalData.has(stopId)) {
+                    for (const arrival of latestArrivalData.get(stopId)) {
+                        queue.push(arrival);
+                    }
+                }
+                console.log('sub')
+                
 
                 try {
                     while (true) {
@@ -294,16 +303,7 @@ async function predictivePollingLoop() {
 
 async function handleData(vehicleJson, tripJson) {
     latestVehicleData.clear();
-
-    const vehicleToStops = new Map();
-    for (const entity of tripJson.entity) {
-        const trip = entity.trip_update;
-        const vehicleId = trip?.vehicle?.id;
-        if (!vehicleId || !trip?.stop_time_update) continue;
-
-        const stopIds = trip.stop_time_update.map((s) => s.stop_id);
-        vehicleToStops.set(vehicleId, stopIds);
-    }
+    latestArrivalData.clear();
 
     for (const entity of vehicleJson.entity) {
         const v = entity.vehicle;
@@ -317,9 +317,6 @@ async function handleData(vehicleJson, tripJson) {
             Bearing: v.position.bearing,
             timestamp: vehicleJson.header?.timestamp ?? 0, // fall back to 0 if dne
         };
-        if (payload.timestamp == 0) {
-            console.log('0')
-        }
 
         if (!latestVehicleData.has(payload.RouteId)) {
             latestVehicleData.set(payload.RouteId, []);
@@ -327,9 +324,19 @@ async function handleData(vehicleJson, tripJson) {
         latestVehicleData.get(payload.RouteId).push(payload);
         eventEmitter.emit(`${VEHICLE_UPDATE}_${payload.RouteId}`, payload);
     }
-
+    
+    
+    // Arrivals
+    
+    const groupedArrivals = new Map(); // stopId -> routeId -> StopArrival[]
+    
+    
     const emittedArrivals = new Set();
+    
+    // Parse trips
     for (const entity of tripJson.entity) {
+        
+        // Validate entity structure
         const tripUpdate = entity.trip_update;
         if (!tripUpdate?.trip?.trip_id || !tripUpdate?.stop_time_update) continue;
 
@@ -355,10 +362,51 @@ async function handleData(vehicleJson, tripJson) {
                 delaySeconds: delay,
                 timestamp: tripJson.header?.timestamp ?? 0, // fall back to 0 if dne
             };
+            
+            if (!groupedArrivals.has(stopId)) {
+                groupedArrivals.set(stopId, new Map());
+            }
 
+            const routesMap = groupedArrivals.get(stopId);
+            if (!routesMap.has(routeId)) {
+                routesMap.set(routeId, []);
+            }
+
+            routesMap.get(routeId).push(stopArrivalPayload);
+            
+            /*
+            
+            if (!latestArrivalData.has(stopArrivalPayload.stopId)) {
+                latestArrivalData.set(stopArrivalPayload.stopId, []);
+            }
+            latestArrivalData.get(stopArrivalPayload.stopId).push(stopArrivalPayload);
+            
+            //console.log(`${VEHICLE_UPDATE}_STOP_${stopId}`)
             eventEmitter.emit(`${VEHICLE_UPDATE}_STOP_${stopId}`, stopArrivalPayload);
+            */
         }
     }
+    
+    for (const [stopId, routeMap] of groupedArrivals.entries()) {
+        const arrivalsToEmit = [];
+
+        for (const [routeId, arrivals] of routeMap.entries()) {
+            // Sort by soonest arrival
+            arrivals.sort((a, b) => a.arrivalTime - b.arrivalTime);
+
+            // Take top 3
+            const topArrivals = arrivals.slice(0, 3);
+            arrivalsToEmit.push(...topArrivals);
+        }
+
+        // Store in cache
+        latestArrivalData.set(stopId, arrivalsToEmit);
+
+        // Emit batch once per stop
+        eventEmitter.emit(`${VEHICLE_UPDATE}_STOP_${stopId}`, arrivalsToEmit);
+    }
+    
+    
 }
 
 predictivePollingLoop();

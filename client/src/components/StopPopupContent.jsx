@@ -9,13 +9,14 @@ const STOP_UPDATES_SUB = gql`
             tripId
             arrivalTime
             delaySeconds
+            timestamp
         }
     }
 `;
 
 function formatTime(unixSeconds) {
     const date = new Date(unixSeconds * 1000);
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', });
 }
 
 const StopPopupContent = ({ stop }) => {
@@ -71,10 +72,18 @@ const StopPopupContent = ({ stop }) => {
                     <ul className="mt-1 list-disc list-inside">
                         {arrivals.map((a, i) => (
                             <li key={`${a.tripId}-${i}`}>
-                                {formatTime(a.arrivalTime)} – Route {a.routeId} – Bus {a.tripId}
+                                {formatTime(a.arrivalTime - a.delaySeconds)} – Route {a.routeId} – Bus {a.tripId}
                             </li>
                         ))}
                     </ul>
+                    <p>Updated: {formatTime(stopDataLive.stopUpdates[0].timestamp)}</p>
+                    {<ul className="mt-1 list-disc list-inside overflow-scroll">
+                        {stopDataLive?.stopUpdates.map((a, i) => (
+                            <li key={`${a.tripId}-${i}`}>
+                                {formatTime(a.arrivalTime)} – Route {a.routeId} – Bus {a.tripId}
+                            </li>
+                        ))}
+                    </ul>}
                 </div>
             ) : (
                 <p className="text-sm text-gray-400 mt-4">No upcoming arrivals</p>
