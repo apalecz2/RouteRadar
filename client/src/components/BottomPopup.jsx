@@ -36,7 +36,7 @@ const CloseButton = ({ onClick }) => (
 
 
 
-const BottomPopup = ({ open, popupType, onClose, children }) => {
+const BottomPopup = ({ open, popupType, onClose, isClosing, children }) => {
     const [shouldRender, setShouldRender] = useState(false);
     const [isAnimating, setIsAnimating] = useState(false);
     const [currentContent, setCurrentContent] = useState(null);
@@ -99,21 +99,21 @@ const BottomPopup = ({ open, popupType, onClose, children }) => {
     return (
         <div
             className={`
-                fixed bottom-[2.5rem] left-1/2 
-                w-[90%] md:w-[550px] max-w-[95%] p-6 z-50
-                rounded-2xl md:rounded-3xl
-                bg-white/10 dark:bg-white/5 backdrop-blur-2xl
-                border border-white/30 dark:border-white/15 shadow-2xl
-                before:content-[''] before:absolute before:inset-0
-                before:rounded-2xl md:before:rounded-3xl
-                before:bg-gradient-to-br before:from-white/40 before:to-white/0
-                before:pointer-events-none
-                transition-all duration-300 transform
-                ${isAnimating ? 'animate-slide-up' : 'animate-slide-down'}
-            `}
+        fixed bottom-[2.5rem] left-1/2 
+        w-[90%] md:w-[550px] max-w-[95%] p-6 z-50
+        rounded-2xl md:rounded-3xl
+        bg-white/10 dark:bg-white/5 backdrop-blur-2xl
+        border border-white/30 dark:border-white/15 shadow-2xl
+        before:content-[''] before:absolute before:inset-0
+        before:rounded-2xl md:before:rounded-3xl
+        before:bg-gradient-to-br before:from-white/40 before:to-white/0
+        before:pointer-events-none
+        transition-all duration-300 transform
+        ${open ? 'animate-slide-up' : isClosing ? 'animate-slide-down' : ''}
+    `}
             style={{
-                opacity: isAnimating ? 1 : 0,
-                pointerEvents: isAnimating ? 'auto' : 'none',
+                opacity: open ? 1 : 0,
+                pointerEvents: open ? 'auto' : 'none',
             }}
         >
             <div className="relative z-10 text-left">

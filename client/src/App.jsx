@@ -20,11 +20,11 @@ function App() {
 
     const [activePopup, setActivePopup] = useState(null);
     const [popupQueue, setPopupQueue] = useState(null);
-    
+
     const [selectedBus, setSelectedBus] = useState(null);
-    
+
     const [isClosing, setIsClosing] = useState(false);
-    
+
     const lastPopupRef = useRef(null);
     useEffect(() => {
         // Always store the most recently intended popup (even if it's queued)
@@ -48,7 +48,7 @@ function App() {
         } else {
             setSelectedBus(null);
         }
-    
+
         setActivePopup(currentActivePopup => {
             if (currentActivePopup) {
                 setPopupQueue(popupData);
@@ -60,8 +60,8 @@ function App() {
             }
         });
     }, []);
-    
-    
+
+
     useEffect(() => {
         if (isClosing) {
             // After animation duration, fully close popup
@@ -69,16 +69,16 @@ function App() {
                 setActivePopup(null);
                 setIsClosing(false);
             }, 300); // must match animation duration
-    
+
             return () => clearTimeout(timeout);
         }
     }, [isClosing]);
-    
+
     const handleClosePopup = useCallback(() => {
         setActivePopup(null);
         setSelectedBus(null);
     }, []);
-    
+
     const updatePopupData = useCallback((vehicle) => {
         setActivePopup(prevActivePopup => {
             if (prevActivePopup?.type === 'bus' && prevActivePopup.data.VehicleId === vehicle.VehicleId) {
@@ -87,7 +87,7 @@ function App() {
             return prevActivePopup; // Important: always return the previous state if no update is needed
         });
     }, []);
-    
+
     const popupIdentity = activePopup ? `${activePopup.type}:${activePopup.data?.StopId || activePopup.data?.VehicleId}` : null;
 
 
@@ -98,20 +98,19 @@ function App() {
             {map && <Routes map={map} routeIds={routeIds} />}
             {map && <Stops2 map={map} routeIds={routeIds.map(val => val.replace(/^0+/, ''))} showPopup={showPopup} activePopup={activePopup} />}
 
-            {(activePopup || isClosing) && (
-                <BottomPopup
-                    open={!isClosing && !!activePopup}
-                    popupType={popupIdentity}
-                    onClose={handleClosePopup}
-                >
-                    {lastPopupRef.current?.type === 'bus' && (
-                        <BusPopupContent bus={lastPopupRef.current.data} />
-                    )}
-                    {lastPopupRef.current?.type === 'stop' && (
-                        <StopPopupContent stop={lastPopupRef.current.data} />
-                    )}
-                </BottomPopup>
-            )}
+            <BottomPopup
+                open={!isClosing && !!activePopup}
+                popupType={popupIdentity}
+                onClose={handleClosePopup}
+                isClosing={isClosing} // 👈 pass closing state
+            >
+                {lastPopupRef.current?.type === 'bus' && (
+                    <BusPopupContent bus={lastPopupRef.current.data} />
+                )}
+                {lastPopupRef.current?.type === 'stop' && (
+                    <StopPopupContent stop={lastPopupRef.current.data} />
+                )}
+            </BottomPopup>
 
             <TimeDisplay />
             <Menu2 routeIds={routeIds} setRouteIds={setRouteIds} />
