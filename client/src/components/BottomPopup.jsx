@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 
-
 // Close button
 const CloseButton = ({ onClick }) => (
     <button
@@ -34,14 +33,13 @@ const CloseButton = ({ onClick }) => (
     </button>
 );
 
-
-
-const BottomPopup = ({ open, popupType, onClose, isClosing, children }) => {
+const BottomPopup = ({ open, popupType, onClose, isClosing, triggerClose, children }) => {
     const [shouldRender, setShouldRender] = useState(false);
     const [isAnimating, setIsAnimating] = useState(false);
     const [currentContent, setCurrentContent] = useState(null);
     const [lastPopupType, setLastPopupType] = useState(null);
 
+    // Make sure css animations sum to this
     const animationDuration = 300;
 
     useEffect(() => {
@@ -76,25 +74,14 @@ const BottomPopup = ({ open, popupType, onClose, isClosing, children }) => {
         }
     }, [open, popupType]);
 
-    // ✨ This effect ensures live updates update the popup content
+    // This effect ensures live updates update the popup content
     useEffect(() => {
         if (open && popupType === lastPopupType) {
             setCurrentContent(children);
         }
-    }, [children]); // 🧠 Only runs if content changes for same popup
+    }, [children]); // Only runs if content changes for same popup
 
     if (!shouldRender) return null;
-
-    const close = () => {
-        setIsAnimating(false);
-        const timeoutId = setTimeout(() => {
-            setShouldRender(false);
-            setCurrentContent(null);
-            setLastPopupType(null);
-            onClose();
-        }, animationDuration);
-        return () => clearTimeout(timeoutId);
-    };
 
     return (
         <div
@@ -117,7 +104,7 @@ const BottomPopup = ({ open, popupType, onClose, isClosing, children }) => {
             }}
         >
             <div className="relative z-10 text-left">
-                <CloseButton onClick={close} />
+                <CloseButton onClick={triggerClose} />
                 {currentContent}
             </div>
         </div>

@@ -75,8 +75,7 @@ function App() {
     }, [isClosing]);
 
     const handleClosePopup = useCallback(() => {
-        setActivePopup(null);
-        setSelectedBus(null);
+        setIsClosing(true);
     }, []);
 
     const updatePopupData = useCallback((vehicle) => {
@@ -102,7 +101,8 @@ function App() {
                 open={!isClosing && !!activePopup}
                 popupType={popupIdentity}
                 onClose={handleClosePopup}
-                isClosing={isClosing} // 👈 pass closing state
+                isClosing={isClosing} // pass closing state
+                triggerClose={() => setIsClosing(true)}
             >
                 {lastPopupRef.current?.type === 'bus' && (
                     <BusPopupContent bus={lastPopupRef.current.data} />

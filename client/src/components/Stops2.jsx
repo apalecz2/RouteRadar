@@ -1,4 +1,3 @@
-import { act } from 'react';
 import { useEffect, useRef, useState, useMemo } from 'react';
 
 // Helper to process the json files into maps for quick access after initial load
@@ -101,6 +100,17 @@ const Stops2 = ({ map, routeIds, showPopup, activePopup }) => {
 
     const markersRef = useRef(new Map());
 
+
+    const [selectedStopId, setSelectedStopId] = useState(null);
+
+    useEffect(() => {
+        if (activePopup && activePopup.type === 'stop') {
+            setSelectedStopId(activePopup.data.stop_id);
+        } else {
+            setSelectedStopId(null);
+        }
+    }, [activePopup]);
+
     // Track the selected marker to reset colour after another is clicked etc
     const selectedMarkerRef = useRef(null);
 
@@ -146,18 +156,7 @@ const Stops2 = ({ map, routeIds, showPopup, activePopup }) => {
                 });
 
                 marker.addListener('click', () => {
-                    // Reset previously selected marker
-                    if (selectedMarkerRef.current) {
-                        selectedMarkerRef.current.content = createStopPin();
-                        selectedMarkerRef.current.zIndex = 30;
-                    }
-                    // Change the marker's content to a new pin with a different color
-                    marker.content = createStopPin('#ff0000', true); // red on click
-                    // Move to front
-                    marker.zIndex = 50;
-                    selectedMarkerRef.current = marker;
-
-                    //setSelectedStop(stop);
+                    
                     showPopup({ type: 'stop', data: stop });
                 });
 
@@ -174,17 +173,22 @@ const Stops2 = ({ map, routeIds, showPopup, activePopup }) => {
         }
     }, [map, visibleStopIds, stopsById, stopsByRoute]);
 
-    // Watch for when the popup is no longer a stop, to clear the pin styling
     useEffect(() => {
-        if (activePopup?.type !== 'stop' & activePopup != null) {
-            // Clear selection visual (reset pin)
-            if (selectedMarkerRef.current) {
-                selectedMarkerRef.current.content = createStopPin();
-                selectedMarkerRef.current = null;
-            }
+        // Clear previous highlight
+        if (selectedMarkerRef.current) {
+            selectedMarkerRef.current.content = createStopPin();
+            selectedMarkerRef.current.zIndex = 30;
+            selectedMarkerRef.current = null;
         }
-    }, [activePopup]);
-
+        
+        if (selectedStopId && markersRef.current.has(selectedStopId)) {
+            const marker = markersRef.current.get(selectedStopId);
+            marker.content = createStopPin('#ff0000', true); // highlight color + ping
+            marker.zIndex = 50;
+            selectedMarkerRef.current = marker;
+        }
+    }, [selectedStopId]);
+    
     return null;
 
 }
