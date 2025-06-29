@@ -100,3 +100,33 @@
 .animate-fade-in {
     animation: fade-in 0.3s ease;
 }
+
+/* Used for the selected bus, in BusMarkers.jsx */
+.bus-ping {
+    position: absolute;
+    width: 30px;
+    height: 30px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    background: rgba(0, 200, 200, 1);
+    animation: bus-ping 1.2s infinite ease-out;
+    z-index: -1;
+}
+
+@keyframes bus-ping {
+    0% {
+        transform: translate(-50%, -50%) scale(0.5);
+        opacity: 0.8;
+    }
+
+    80% {
+        transform: translate(-50%, -50%) scale(1.5);
+        opacity: 0;
+    }
+
+    100% {
+        opacity: 0;
+    }
+}

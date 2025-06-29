@@ -20,6 +20,8 @@ function App() {
 
     const [activePopup, setActivePopup] = useState(null);
     const [popupQueue, setPopupQueue] = useState(null);
+    
+    const [selectedBus, setSelectedBus] = useState(null);
 
     useEffect(() => {
         if (activePopup === null && popupQueue) {
@@ -28,15 +30,29 @@ function App() {
         }
     }, [activePopup, popupQueue]);
 
-    const showPopup = (popupData) => {
-        if (activePopup) {
-            // Queue the new popup, close current one
-            setPopupQueue(popupData);
-            setActivePopup(null);
+    const showPopup = useCallback((popupData) => {
+        if (popupData.type === 'bus') {
+            setSelectedBus(popupData.data.VehicleId);
         } else {
-            setActivePopup(popupData);
+            setSelectedBus(null);
         }
-    };
+        
+        // We use the "functional update" form of setState here. This lets us
+        // get the current state without needing to list it as a dependency.
+        setActivePopup(currentActivePopup => {
+            if (currentActivePopup) {
+                setPopupQueue(popupData);
+                return null;
+            } else {
+                return popupData;
+            }
+        });
+    }, []);
+    
+    const handleClosePopup = useCallback(() => {
+        setActivePopup(null);
+        setSelectedBus(null);
+    }, []);
     
     const updatePopupData = useCallback((vehicle) => {
         setActivePopup(prevActivePopup => {
@@ -53,7 +69,7 @@ function App() {
     return (
         <div className="relative w-full h-screen">
             <MapContainer onMapLoad={setMap} />
-            {map && <BusMarkers map={map} routeIds={routeIds} showPopup={showPopup} updatePopupData={updatePopupData} />}
+            {map && <BusMarkers map={map} routeIds={routeIds} showPopup={showPopup} updatePopupData={updatePopupData} selectedBus={selectedBus} />}
             {map && <Routes map={map} routeIds={routeIds} />}
             {map && <Stops2 map={map} routeIds={routeIds.map(val => val.replace(/^0+/, ''))} showPopup={showPopup} activePopup={activePopup} />}
 
@@ -61,7 +77,7 @@ function App() {
                 <BottomPopup
                     open={!!activePopup}
                     popupType={popupIdentity}
-                    onClose={() => setActivePopup(null)}
+                    onClose={handleClosePopup}
                 >
                     {activePopup.type === 'bus' && (
                         <BusPopupContent bus={activePopup.data} />

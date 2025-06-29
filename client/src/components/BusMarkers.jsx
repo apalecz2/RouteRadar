@@ -23,13 +23,77 @@ const routeColors = {
     '34': 'purple',
 };
 
-const BusMarkers = ({ routeIds, map, showPopup, updatePopupData }) => {
+const BusMarkers = ({ routeIds, map, showPopup, updatePopupData, selectedBus }) => {
     const client = useApolloClient();
     const markersRef = useRef({});
     const routeToVehicleMap = useRef({});
     const subscriptionsRef = useRef({});
-    
-    const [selectedBus, setSelectedBus] = useState(null);
+
+    //const [selectedBus, setSelectedBus] = useState(null);
+    const prevSelectedBusRef = useRef(null);
+
+    // This function creates the initial DOM structure for a bus marker
+    function createBusPin(color = 'gray', rotation = 0, withPing = false) {
+        const wrapper = document.createElement('div');
+        wrapper.style.position = 'relative';
+        wrapper.style.width = '24px';
+        wrapper.style.height = '24px';
+        wrapper.style.transform = 'translateY(50%)';
+
+        if (withPing) {
+            const ping = document.createElement('div');
+            ping.className = 'bus-ping';
+            wrapper.appendChild(ping);
+        }
+
+        const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        svg.setAttribute("height", "24px");
+        svg.setAttribute("viewBox", "0 -960 960 960");
+        svg.setAttribute("width", "24px");
+        svg.setAttribute("fill", color);
+        svg.style.transform = `rotate(${rotation}deg)`;
+        svg.style.transition = 'transform 0.3s ease';
+
+        const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        path.setAttribute("d", "m480-226.13-260.63 111.2q-14.67 5.71-27.85 2.73-13.17-2.97-22.37-12.17-9.19-9.19-12.05-22.75-2.86-13.55 3.1-28.23l277.78-625.76q5.72-13.67 17.65-20.51 11.94-6.84 24.37-6.84 12.43 0 24.37 6.84 11.93 6.84 17.65 20.51L799.8-175.35q5.96 14.68 3.1 28.23-2.86 13.56-12.05 22.75-9.2 9.2-22.37 12.17-13.18 2.98-27.85-2.73L480-226.13Z");
+        svg.appendChild(path);
+
+        wrapper.appendChild(svg);
+
+        return wrapper;
+    }
+
+    useEffect(() => {
+        const prevId = prevSelectedBusRef.current;
+        const newId = selectedBus;
+
+        // Remove ping from the previously selected bus, if there was one.
+        if (prevId && markersRef.current[prevId]) {
+            const marker = markersRef.current[prevId];
+            const pingEl = marker.content?.querySelector('.bus-ping');
+            if (pingEl) {
+                pingEl.remove();
+            }
+        }
+
+        // Add ping to the newly selected bus.
+        if (newId && markersRef.current[newId]) {
+            const marker = markersRef.current[newId];
+            // Add a ping element only if one doesn't already exist.
+            if (marker.content && !marker.content.querySelector('.bus-ping')) {
+                const ping = document.createElement('div');
+                ping.className = 'bus-ping';
+                // Prepend to ensure it's layered behind the SVG via z-index.
+                marker.content.prepend(ping);
+            }
+        }
+
+        // Remember the currently selected bus for the next change.
+        prevSelectedBusRef.current = selectedBus;
+    }, [selectedBus]);
+
+
+
 
 
     useEffect(() => {
@@ -79,54 +143,37 @@ const BusMarkers = ({ routeIds, map, showPopup, updatePopupData }) => {
 
                     const existingMarker = markersRef.current[id];
                     if (existingMarker) {
-                        const markerContent = existingMarker.content?.firstChild;
-                        if (markerContent?.style) {
-                            markerContent.style.transform = `rotate(${vehicle.Bearing || 0}deg)`;
-                        }
                         existingMarker.position = pos;
                         existingMarker.vehicleData = vehicle;
 
+                        const svgElement = existingMarker.content.querySelector('svg');
+                        if (svgElement) {
+                            svgElement.style.transform = `rotate(${vehicle.Bearing || 0}deg)`;
+                        }
+
                     } else {
+                        // If marker is new, create it from scratch.
                         const color = routeColors[routeId] || 'gray';
-                        const iconElement = document.createElement('div');
                         const rotation = vehicle.Bearing || 0;
-                        iconElement.innerHTML = `
-                        
-                            <svg xmlns="http://www.w3.org/2000/svg" 
-                                height="24px" viewBox="0 -960 960 960" width="24px" fill="${color}"
-                                style="transform: rotate(${rotation}deg); transition: transform 0.3s ease;"
-                            >
-                                <path d="m480-226.13-260.63 111.2q-14.67 5.71-27.85 2.73-13.17-2.97-22.37-12.17-9.19-9.19-12.05-22.75-2.86-13.55 3.1-28.23l277.78-625.76q5.72-13.67 17.65-20.51 11.94-6.84 24.37-6.84 12.43 0 24.37 6.84 11.93 6.84 17.65 20.51L799.8-175.35q5.96 14.68 3.1 28.23-2.86 13.56-12.05 22.75-9.2 9.2-22.37 12.17-13.18 2.98-27.85-2.73L480-226.13Z"/>
-                            </svg>
-                         
-                        `;
-                        iconElement.style.transform = 'translateY(50%)'   // Centers marker vertically
-                        /*
-                        markersRef.current[id] = new AdvancedMarkerElement({
-                            position: pos,
-                            map,
-                            title: vehicle.Destination,
-                            content: iconElement,
-                        })
-                            */
-                        
+                        const withPing = selectedBus === id;
+
+                        const markerContent = createBusPin(color, rotation, withPing);
+
                         const marker = new AdvancedMarkerElement({
                             position: pos,
                             map,
                             title: vehicle.Destination,
-                            content: iconElement,
+                            content: markerContent,
                         })
                         marker.vehicleData = vehicle;
 
                         marker.addListener('click', () => {
-                            
-                            showPopup({ type: 'bus', data: marker.vehicleData })
-                            
+                            //setSelectedBus(vehicle.VehicleId);
+                            showPopup({ type: 'bus', data: marker.vehicleData });
                         });
-                        
+
                         markersRef.current[id] = marker;
-                        
-                        
+
                     }
                     updatePopupData?.(vehicle);
                 },
@@ -144,8 +191,8 @@ const BusMarkers = ({ routeIds, map, showPopup, updatePopupData }) => {
             markersRef.current = {};
             routeToVehicleMap.current = {};
         };
-    }, [routeIds, map]);
-    
+    }, [routeIds, map, showPopup, updatePopupData]);
+
     return null
 };
 
