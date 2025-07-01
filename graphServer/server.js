@@ -192,7 +192,7 @@ const resolvers = {
             subscribe: async function* (_, { stopId }) {
                 const queue = [];
                 const handler = (payload) => {
-                    console.log(`Server: Received payload for stop ${stopId}:`, payload);
+                    //console.log(`Server: Received payload for stop ${stopId}:`, payload);
                     queue.push(payload);
                 };
                 eventEmitter.on(`${VEHICLE_UPDATE}_STOP_${stopId}`, handler);
@@ -202,7 +202,7 @@ const resolvers = {
                         queue.push(arrival);
                     }
                 }
-                console.log(`Server: Subscription started for stop ${stopId}, initial queue length: ${queue.length}`);
+                //console.log(`Server: Subscription started for stop ${stopId}, initial queue length: ${queue.length}`);
                 
 
                 try {
@@ -212,11 +212,11 @@ const resolvers = {
                             continue;
                         }
                         const dataToSend = queue.splice(0, queue.length);
-                        console.log(`Server: Sending ${dataToSend.length} arrivals for stop ${stopId}`);
+                        //console.log(`Server: Sending ${dataToSend.length} arrivals for stop ${stopId}`);
                         yield { stopUpdates: dataToSend };
                     }
                 } finally {
-                    console.log(`Server: Subscription ended for stop ${stopId}`);
+                    //console.log(`Server: Subscription ended for stop ${stopId}`);
                     eventEmitter.off(`${VEHICLE_UPDATE}_STOP_${stopId}`, handler);
                 }
             }
@@ -255,7 +255,7 @@ async function predictivePollingLoop() {
         } else {
             const now = Math.floor(Date.now() / 1000);
             const nextExpected = lastVehicleTimestamp + UPDATE_PERIOD_SEC;
-            const delay = Math.max(0, (nextExpected - now) * 1000 + 200); // 0.5s early
+            const delay = Math.max(0, (nextExpected - now) * 1000 + 200); // 0.2s late
             console.log(`Waiting ${delay}ms for next expected update at ${nextExpected}`);
             await new Promise(res => setTimeout(res, delay));
         }
@@ -264,7 +264,6 @@ async function predictivePollingLoop() {
 
         for (let attempt = 0; attempt < 3; attempt++) {
             try {
-                //console.log("Polling...");
                 const [vehicleRes, tripRes] = await Promise.all([
                     fetch(VEHICLE_URL),
                     fetch(TRIP_UPDATE_URL),
@@ -380,16 +379,6 @@ async function handleData(vehicleJson, tripJson) {
 
             routesMap.get(routeId).push(stopArrivalPayload);
             
-            /*
-            
-            if (!latestArrivalData.has(stopArrivalPayload.stopId)) {
-                latestArrivalData.set(stopArrivalPayload.stopId, []);
-            }
-            latestArrivalData.get(stopArrivalPayload.stopId).push(stopArrivalPayload);
-            
-            //console.log(`${VEHICLE_UPDATE}_STOP_${stopId}`)
-            eventEmitter.emit(`${VEHICLE_UPDATE}_STOP_${stopId}`, stopArrivalPayload);
-            */
         }
     }
     
@@ -437,5 +426,5 @@ process.on('SIGINT', async () => {
     setTimeout(() => {
         console.log('Force exiting...');
         process.exit(1);
-    }, 5000);
+    }, 2000);
 });

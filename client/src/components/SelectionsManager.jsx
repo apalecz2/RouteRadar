@@ -5,14 +5,9 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 
-
 import StopMarkers from './StopMarkers';
 import BusMarkers2 from './BusMarkers2';
-
 import PopupManager from './PopupManager';
-
-
-
 
 const SelectionsManager = ({ map, routeIds }) => {
 
@@ -32,7 +27,6 @@ const SelectionsManager = ({ map, routeIds }) => {
     const markersRef = useRef({});
 
 
-
     // Handles a marker clicked, obj: the content, type: string - stop, bus..., marker: reference to actual map marker
     const handleMarkerClicked = useCallback((obj, type, marker) => {
         const id = obj.stop_id || obj.VehicleId || obj.id;
@@ -43,11 +37,11 @@ const SelectionsManager = ({ map, routeIds }) => {
         // Use the ref here to prevent needing 'selection' in the dependency array
         if (!selectionRef.current || id !== selectionRef.current.id || type !== selectionRef.current.type) {
             // New selection - set it
-            console.log(`New selection: ${type} ${id}`);
+            //console.log(`New selection: ${type} ${id}`);
             setSelection({ id, type, data: obj, marker });
         } else {
             // Same marker clicked - only update if data actually changed
-            console.log(`Same marker clicked: ${type} ${id}`);
+            //console.log(`Same marker clicked: ${type} ${id}`);
             
             // For buses, compare relevant fields that might change
             if (type === 'bus') {
@@ -64,10 +58,10 @@ const SelectionsManager = ({ map, routeIds }) => {
                     currentData.TripId !== newData.TripId;
                 
                 if (hasChanged) {
-                    console.log(`Bus data changed, updating selection`);
+                    //console.log(`Bus data changed, updating selection`);
                     setSelection(prev => ({ ...prev, data: obj }));
                 } else {
-                    console.log(`Bus data unchanged, ignoring click`);
+                    //console.log(`Bus data unchanged, ignoring click`);
                 }
                 // If no relevant data changed, do nothing (prevent unnecessary re-renders)
             } else if (type === 'stop') {
@@ -82,10 +76,10 @@ const SelectionsManager = ({ map, routeIds }) => {
                     currentData.routes?.join(',') !== newData.routes?.join(',');
                 
                 if (hasChanged) {
-                    console.log(`Stop data changed, updating selection`);
+                    //console.log(`Stop data changed, updating selection`);
                     setSelection(prev => ({ ...prev, data: obj }));
                 } else {
-                    console.log(`Stop data unchanged, ignoring click`);
+                    //console.log(`Stop data unchanged, ignoring click`);
                 }
             }
         }
@@ -134,7 +128,7 @@ const SelectionsManager = ({ map, routeIds }) => {
                 highlightedMarkerRef.current = selection;
             }
 
-            console.log('Selection updated:', selection);
+            //console.log('Selection updated:', selection);
         } else {
             // Clear previous highlight when selection is cleared
             if (highlightedMarkerRef.current) {
@@ -151,18 +145,9 @@ const SelectionsManager = ({ map, routeIds }) => {
                 highlightedMarkerRef.current = null;
             }
 
-            console.log('Selection cleared');
+            //console.log('Selection cleared');
         }
     }, [selection]);
-
-
-    /*
-    const btnClk = () => {
-        console.log('set null')
-        setSelection(null);
-    }
-        */
-
 
     // If this component exists, the map is guaranteed to exist, no need for validation here
     return (
@@ -182,12 +167,8 @@ const SelectionsManager = ({ map, routeIds }) => {
                 updateSelectionData={updateSelectionData}
             />
             <PopupManager selection={selection} clearSelection={() => setSelection(null)} />
-            {/*<button className="absolute top-5 left-20 z-50 bg-white p-2 rounded shadow" onClick={btnClk}>Click</button>*/}
         </>
-
     );
-
 }
-
 
 export default SelectionsManager;

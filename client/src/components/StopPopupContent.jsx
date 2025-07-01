@@ -29,16 +29,16 @@ const StopPopupContent = ({ stop, arrivals = [] }) => {
 
     // Track loading state and update times
     useEffect(() => {
-        console.log(`StopPopupContent: Received ${arrivals?.length || 0} arrivals for stop ${stop?.stop_id}`);
+        //console.log(`StopPopupContent: Received ${arrivals?.length || 0} arrivals for stop ${stop?.stop_id}`);
         if (arrivals && arrivals.length > 0) {
             setIsLoading(false);
             const latestTimestamp = Math.max(...arrivals.map(a => a.timestamp));
             setLastUpdateTime(latestTimestamp);
-            console.log(`StopPopupContent: Set loading false, latest timestamp: ${latestTimestamp}`);
+            //console.log(`StopPopupContent: Set loading false, latest timestamp: ${latestTimestamp}`);
         } else {
             // If we have a stop but no arrivals, we're still loading
             setIsLoading(true);
-            console.log(`StopPopupContent: Set loading true, no arrivals`);
+            //console.log(`StopPopupContent: Set loading true, no arrivals`);
         }
     }, [arrivals, stop?.stop_id]);
 
