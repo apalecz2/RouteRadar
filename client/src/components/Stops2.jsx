@@ -1,4 +1,18 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
+import { gql, useApolloClient } from '@apollo/client';
+
+const STOP_UPDATES_SUB = gql`
+    subscription($stopId: String!) {
+        stopUpdates(stopId: $stopId) {
+            stopId
+            routeId
+            tripId
+            arrivalTime
+            delaySeconds
+            timestamp
+        }
+    }
+`;
 
 // Helper to process the json files into maps for quick access after initial load
 const processStops = (stops) => {
@@ -94,12 +108,13 @@ function createStopPin(colour = '#ffffff', withPing = false) {
 }
 
 
-const Stops2 = ({ map, routeIds, showPopup, activePopup }) => {
+const Stops2 = ({ map, routeIds, showPopup, activePopup, updateStopData }) => {
 
     const { stopsById, stopsByRoute } = useStops();
+    const client = useApolloClient();
 
     const markersRef = useRef(new Map());
-
+    const subscriptionsRef = useRef({});
 
     const [selectedStopId, setSelectedStopId] = useState(null);
 
@@ -110,6 +125,47 @@ const Stops2 = ({ map, routeIds, showPopup, activePopup }) => {
             setSelectedStopId(null);
         }
     }, [activePopup]);
+
+    // Manage subscriptions for active stop popup
+    useEffect(() => {
+        if (!client || !activePopup || activePopup.type !== 'stop') {
+            // Clean up any existing subscriptions
+            Object.values(subscriptionsRef.current).forEach(sub => sub.unsubscribe());
+            subscriptionsRef.current = {};
+            return;
+        }
+
+        const stopId = activePopup.data.stop_id;
+        
+        // Don't create duplicate subscriptions
+        if (subscriptionsRef.current[stopId]) {
+            return;
+        }
+
+        const observable = client.subscribe({
+            query: STOP_UPDATES_SUB,
+            variables: { stopId },
+        });
+
+        const subscription = observable.subscribe({
+            next({ data }) {
+                const arrivals = data?.stopUpdates;
+                if (arrivals && updateStopData) {
+                    updateStopData(stopId, arrivals);
+                }
+            },
+            error(error) {
+                console.error(`Error in stop subscription for ${stopId}:`, error);
+            }
+        });
+
+        subscriptionsRef.current[stopId] = subscription;
+
+        return () => {
+            subscription.unsubscribe();
+            delete subscriptionsRef.current[stopId];
+        };
+    }, [client, activePopup, updateStopData]);
 
     // Track the selected marker to reset colour after another is clicked etc
     const selectedMarkerRef = useRef(null);
@@ -188,6 +244,14 @@ const Stops2 = ({ map, routeIds, showPopup, activePopup }) => {
             selectedMarkerRef.current = marker;
         }
     }, [selectedStopId]);
+    
+    // Cleanup subscriptions on unmount
+    useEffect(() => {
+        return () => {
+            Object.values(subscriptionsRef.current).forEach(sub => sub.unsubscribe());
+            subscriptionsRef.current = {};
+        };
+    }, []);
     
     return null;
 

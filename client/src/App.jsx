@@ -14,6 +14,23 @@ import BottomPopup from './components/BottomPopup';
 import BusPopupContent from './components/BusPopupContent';
 import StopPopupContent from './components/StopPopupContent';
 
+/*
+    This code is actually awful. Lock in.
+    
+    There can only be one selection at a time. For anything. 
+    Use state, for current selection. This can be a bus, stop, or route. Possibly more later
+    
+    
+    
+    
+    
+
+*/
+
+
+
+
+
 function App() {
     const [map, setMap] = useState(null);
     const [routeIds, setRouteIds] = useState([]);
@@ -87,7 +104,16 @@ function App() {
         });
     }, []);
 
-    const popupIdentity = activePopup ? `${activePopup.type}:${activePopup.data?.StopId || activePopup.data?.VehicleId}` : null;
+    const updateStopData = useCallback((stopId, arrivals) => {
+        setActivePopup(prevActivePopup => {
+            if (prevActivePopup?.type === 'stop' && prevActivePopup.data.stop_id === stopId) {
+                return { ...prevActivePopup, arrivals };
+            }
+            return prevActivePopup;
+        });
+    }, []);
+
+    const popupIdentity = activePopup ? `${activePopup.type}:${activePopup.data?.StopId || activePopup.data?.VehicleId || activePopup.data?.stop_id}` : null;
 
 
     return (
@@ -95,7 +121,7 @@ function App() {
             <MapContainer onMapLoad={setMap} />
             {map && <BusMarkers map={map} routeIds={routeIds} showPopup={showPopup} updatePopupData={updatePopupData} selectedBus={selectedBus} />}
             {map && <Routes map={map} routeIds={routeIds} />}
-            {map && <Stops2 map={map} routeIds={routeIds.map(val => val.replace(/^0+/, ''))} showPopup={showPopup} activePopup={activePopup} />}
+            {map && <Stops2 map={map} routeIds={routeIds.map(val => val.replace(/^0+/, ''))} showPopup={showPopup} activePopup={activePopup} updateStopData={updateStopData} />}
 
             <BottomPopup
                 open={!isClosing && !!activePopup}
@@ -108,7 +134,7 @@ function App() {
                     <BusPopupContent bus={lastPopupRef.current.data} />
                 )}
                 {lastPopupRef.current?.type === 'stop' && (
-                    <StopPopupContent stop={lastPopupRef.current.data} />
+                    <StopPopupContent stop={lastPopupRef.current.data} arrivals={lastPopupRef.current.arrivals} />
                 )}
             </BottomPopup>
 

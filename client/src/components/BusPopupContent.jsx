@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 
 const formatTimeAgo = (secondsAgo) => {
+    if (secondsAgo == 1) return `${secondsAgo} second ago`;
     if (secondsAgo < 60) return `${secondsAgo} seconds ago`;
     if (secondsAgo < 120) return `1 minute ago`;
-    if (secondsAgo < 3600) return `${Math.floor(secondsAgo / 60)} minutes ago`;
-    if (secondsAgo < 86400) return `${Math.floor(secondsAgo / 3600)} hours ago`;
-    return `${Math.floor(secondsAgo / 86400)} days ago`;
+    if (secondsAgo < 3600) return `${Math.floor(secondsAgo / 60)} minute(s) ago`;
+    if (secondsAgo < 86400) return `${Math.floor(secondsAgo / 3600)} hour(s) ago`;
+    return `${Math.floor(secondsAgo / 86400)} day(s) ago`;
 };
 
 const BusPopupContent = ({ bus }) => {
