@@ -9,6 +9,8 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import StopMarkers from './StopMarkers';
 import BusMarkers2 from './BusMarkers2';
 
+import PopupManager from './PopupManager';
+
 
 
 
@@ -40,50 +42,61 @@ const SelectionsManager = ({ map, routeIds }) => {
 
     // Run when selection changes. For ANY - stops, buses
     useEffect(() => {
-        if (!selection) return;
-
-        // Reset previous highlight
-        if (highlightedMarkerRef.current) {
-            const prev = highlightedMarkerRef.current;
-            const pinCreator = pinCreatorsRef.current[prev.type];
-            if (pinCreator) {
-                if (prev.type === 'bus') {
-                    const rotation = prev.data.Bearing || 0;
-                    prev.marker.content = pinCreator('gray', rotation, false);
-                } else {
-                    prev.marker.content = pinCreator();
+        if (selection) {
+            // Reset previous highlight
+            if (highlightedMarkerRef.current) {
+                const prev = highlightedMarkerRef.current;
+                const pinCreator = pinCreatorsRef.current[prev.type];
+                if (pinCreator) {
+                    if (prev.type === 'bus') {
+                        const rotation = prev.data.Bearing || 0;
+                        prev.marker.content = pinCreator('gray', rotation, false);
+                    } else {
+                        prev.marker.content = pinCreator();
+                    }
                 }
             }
-        }
 
-        // Highlight new marker
-        const pinCreator = pinCreatorsRef.current[selection.type];
-        if (pinCreator && selection.marker) {
-            if (selection.type === 'bus') {
-                // Pass rotation for bus
-                const rotation = selection.data.Bearing || 0;
-                selection.marker.content = pinCreator('#ff0000', rotation, true);
-            } else {
-                // Stops, etc.
-                selection.marker.content = pinCreator('#ff0000', true);
+            // Highlight new marker
+            const pinCreator = pinCreatorsRef.current[selection.type];
+            if (pinCreator && selection.marker) {
+                if (selection.type === 'bus') {
+                    const rotation = selection.data.Bearing || 0;
+                    selection.marker.content = pinCreator('#ff0000', rotation, true);
+                } else {
+                    selection.marker.content = pinCreator('#ff0000', true);
+                }
+                highlightedMarkerRef.current = selection;
             }
-            highlightedMarkerRef.current = selection;
-        }
 
-        if (selection) {
             console.log('Selection updated:', selection);
+        } else {
+            // Clear previous highlight when selection is cleared
+            if (highlightedMarkerRef.current) {
+                const prev = highlightedMarkerRef.current;
+                const pinCreator = pinCreatorsRef.current[prev.type];
+                if (pinCreator) {
+                    if (prev.type === 'bus') {
+                        const rotation = prev.data.Bearing || 0;
+                        prev.marker.content = pinCreator('gray', rotation, false);
+                    } else {
+                        prev.marker.content = pinCreator();
+                    }
+                }
+                highlightedMarkerRef.current = null;
+            }
+
+            console.log('Selection cleared');
         }
+    }, [selection]);
 
 
-        // Update popup
-
-
-
-
-    }, [selection])
-
-
-
+    /*
+    const btnClk = () => {
+        console.log('set null')
+        setSelection(null);
+    }
+        */
 
 
     // If this component exists, the map is guaranteed to exist, no need for validation here
@@ -102,6 +115,8 @@ const SelectionsManager = ({ map, routeIds }) => {
                 busClicked={handleMarkerClicked}
                 registerPinCreator={(type, fn) => { pinCreatorsRef.current[type] = fn; }}
             />
+            <PopupManager selection={selection} clearSelection={() => setSelection(null)} />
+            {/*<button className="absolute top-5 left-20 z-50 bg-white p-2 rounded shadow" onClick={btnClk}>Click</button>*/}
         </>
 
     );
