@@ -14,18 +14,9 @@ import BottomPopup from './components/BottomPopup';
 import BusPopupContent from './components/BusPopupContent';
 import StopPopupContent from './components/StopPopupContent';
 
-/*
-    This code is actually awful. Lock in.
-    
-    There can only be one selection at a time. For anything. 
-    Use state, for current selection. This can be a bus, stop, or route. Possibly more later
-    
-    
-    
-    
-    
 
-*/
+import SelectionsManager from './components/SelectionsManager';
+
 
 
 
@@ -34,6 +25,11 @@ import StopPopupContent from './components/StopPopupContent';
 function App() {
     const [map, setMap] = useState(null);
     const [routeIds, setRouteIds] = useState([]);
+    
+    
+    
+    
+    /*
 
     const [activePopup, setActivePopup] = useState(null);
     const [popupQueue, setPopupQueue] = useState(null);
@@ -115,7 +111,10 @@ function App() {
 
     const popupIdentity = activePopup ? `${activePopup.type}:${activePopup.data?.StopId || activePopup.data?.VehicleId || activePopup.data?.stop_id}` : null;
 
-
+    */
+    
+    
+    /*
     return (
         <div className="relative w-full h-screen">
             <MapContainer onMapLoad={setMap} />
@@ -141,6 +140,32 @@ function App() {
             <TimeDisplay />
             <Menu2 routeIds={routeIds} setRouteIds={setRouteIds} />
 
+        </div>
+    );
+    */
+   
+    const debuggingRoutes = ['02']
+    
+    return (
+        <div className="relative w-full h-screen">
+            <MapContainer onMapLoad={setMap} />
+            {/*map && <Routes map={map} routeIds={routeIds} />*/}
+            {map && <Routes map={map} routeIds={debuggingRoutes} />}
+            
+            
+            {/*map && <SelectionsManager map={map} routeIds={routeIds} />*/}
+            {map && <SelectionsManager map={map} routeIds={debuggingRoutes} />}
+            
+            
+            
+            
+            
+        
+        
+        
+            <TimeDisplay />
+            <Menu2 routeIds={routeIds} setRouteIds={setRouteIds} />
+        
         </div>
     );
 }
