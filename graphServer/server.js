@@ -191,7 +191,10 @@ const resolvers = {
         stopUpdates: {
             subscribe: async function* (_, { stopId }) {
                 const queue = [];
-                const handler = (payload) => queue.push(payload);
+                const handler = (payload) => {
+                    console.log(`Server: Received payload for stop ${stopId}:`, payload);
+                    queue.push(payload);
+                };
                 eventEmitter.on(`${VEHICLE_UPDATE}_STOP_${stopId}`, handler);
                 
                 if (latestArrivalData.has(stopId)) {
@@ -199,7 +202,7 @@ const resolvers = {
                         queue.push(arrival);
                     }
                 }
-                console.log('sub')
+                console.log(`Server: Subscription started for stop ${stopId}, initial queue length: ${queue.length}`);
                 
 
                 try {
@@ -208,9 +211,12 @@ const resolvers = {
                             await new Promise(res => setTimeout(res, 100));
                             continue;
                         }
-                        yield { stopUpdates: queue.splice(0, queue.length) };
+                        const dataToSend = queue.splice(0, queue.length);
+                        console.log(`Server: Sending ${dataToSend.length} arrivals for stop ${stopId}`);
+                        yield { stopUpdates: dataToSend };
                     }
                 } finally {
+                    console.log(`Server: Subscription ended for stop ${stopId}`);
                     eventEmitter.off(`${VEHICLE_UPDATE}_STOP_${stopId}`, handler);
                 }
             }

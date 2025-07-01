@@ -42,10 +42,52 @@ const SelectionsManager = ({ map, routeIds }) => {
 
         // Use the ref here to prevent needing 'selection' in the dependency array
         if (!selectionRef.current || id !== selectionRef.current.id || type !== selectionRef.current.type) {
+            // New selection - set it
+            console.log(`New selection: ${type} ${id}`);
             setSelection({ id, type, data: obj, marker });
         } else {
-            // Same bus clicked - update data without triggering new selection
-            setSelection(prev => ({ ...prev, data: obj }));
+            // Same marker clicked - only update if data actually changed
+            console.log(`Same marker clicked: ${type} ${id}`);
+            
+            // For buses, compare relevant fields that might change
+            if (type === 'bus') {
+                const currentData = selectionRef.current.data;
+                const newData = obj;
+                
+                // Check if any relevant bus data has changed
+                const hasChanged = 
+                    currentData.Bearing !== newData.Bearing ||
+                    currentData.Latitude !== newData.Latitude ||
+                    currentData.Longitude !== newData.Longitude ||
+                    currentData.Speed !== newData.Speed ||
+                    currentData.RouteId !== newData.RouteId ||
+                    currentData.TripId !== newData.TripId;
+                
+                if (hasChanged) {
+                    console.log(`Bus data changed, updating selection`);
+                    setSelection(prev => ({ ...prev, data: obj }));
+                } else {
+                    console.log(`Bus data unchanged, ignoring click`);
+                }
+                // If no relevant data changed, do nothing (prevent unnecessary re-renders)
+            } else if (type === 'stop') {
+                // For stops, data rarely changes, so we don't update on re-click
+                // This prevents the popup from unnecessarily reopening
+                // Only update if there are actual changes to stop data (very rare)
+                const currentData = selectionRef.current.data;
+                const newData = obj;
+                
+                const hasChanged = 
+                    currentData.name !== newData.name ||
+                    currentData.routes?.join(',') !== newData.routes?.join(',');
+                
+                if (hasChanged) {
+                    console.log(`Stop data changed, updating selection`);
+                    setSelection(prev => ({ ...prev, data: obj }));
+                } else {
+                    console.log(`Stop data unchanged, ignoring click`);
+                }
+            }
         }
     }, []);
 
