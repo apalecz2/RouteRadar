@@ -1,15 +1,13 @@
-
-
-
 // Now all markers on the map are managed from here. This includes popups. All selections stem from here
 
 // There is one state for the currently selected object. The object has the id, and type
 // If this changes, the popup needs to be updated, and ping animations etc
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 
 
 import StopMarkers from './StopMarkers';
+import BusMarkers2 from './BusMarkers2';
 
 
 
@@ -31,29 +29,17 @@ const SelectionsManager = ({ map, routeIds }) => {
 
 
     // Handles a marker clicked, obj: the content, type: string - stop, bus..., marker: reference to actual map marker
-    const handleMarkerClicked = (obj, type, marker) => {
-
+    const handleMarkerClicked = useCallback((obj, type, marker) => {
         const id = obj.stop_id || obj.VehicleId || obj.id;
 
+        // Use the ref here to prevent needing 'selection' in the dependency array
         if (!selectionRef.current || id !== selectionRef.current.id || type !== selectionRef.current.type) {
-            console.log('new pin clicked');
-            setSelection({ id, type, data: obj, marker })
+            setSelection({ id, type, data: obj, marker });
         }
-
-
-        //console.log(selection)
-        /*
-        if (type == 'stop') {
-            setSelection(obj)
-        } else if (type == 'bus') {
-            setSelection(obj)
-        }
-            */
-    }
+    }, []);
 
     // Run when selection changes. For ANY - stops, buses
     useEffect(() => {
-
         if (!selection) return;
 
         // Reset previous highlight
@@ -61,14 +47,26 @@ const SelectionsManager = ({ map, routeIds }) => {
             const prev = highlightedMarkerRef.current;
             const pinCreator = pinCreatorsRef.current[prev.type];
             if (pinCreator) {
-                prev.marker.content = pinCreator(); // default pin
+                if (prev.type === 'bus') {
+                    const rotation = prev.data.Bearing || 0;
+                    prev.marker.content = pinCreator('gray', rotation, false);
+                } else {
+                    prev.marker.content = pinCreator();
+                }
             }
         }
 
         // Highlight new marker
         const pinCreator = pinCreatorsRef.current[selection.type];
         if (pinCreator && selection.marker) {
-            selection.marker.content = pinCreator('#ff0000', true); // red with ping
+            if (selection.type === 'bus') {
+                // Pass rotation for bus
+                const rotation = selection.data.Bearing || 0;
+                selection.marker.content = pinCreator('#ff0000', rotation, true);
+            } else {
+                // Stops, etc.
+                selection.marker.content = pinCreator('#ff0000', true);
+            }
             highlightedMarkerRef.current = selection;
         }
 
@@ -92,18 +90,21 @@ const SelectionsManager = ({ map, routeIds }) => {
     return (
         <>
             {/* Stop markers is just the markers, with listeners */}
-            <StopMarkers map={map} routeIds={routeIds.map(val => val.replace(/^0+/, ''))} stopClicked={handleMarkerClicked} registerPinCreator={(type, fn) => { pinCreatorsRef.current[type] = fn; }} />
-
-
-
-
-
+            <StopMarkers
+                map={map}
+                routeIds={routeIds.map(val => val.replace(/^0+/, ''))}
+                stopClicked={handleMarkerClicked}
+                registerPinCreator={(type, fn) => { pinCreatorsRef.current[type] = fn; }}
+            />
+            <BusMarkers2
+                map={map}
+                routeIds={routeIds}
+                busClicked={handleMarkerClicked}
+                registerPinCreator={(type, fn) => { pinCreatorsRef.current[type] = fn; }}
+            />
         </>
 
     );
-
-
-
 
 }
 
