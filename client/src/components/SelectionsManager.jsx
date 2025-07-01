@@ -28,16 +28,39 @@ const SelectionsManager = ({ map, routeIds }) => {
     // Tracks the marker (if any) that is currently highlighted and showing ping (generic to bus / stop etc)
     const highlightedMarkerRef = useRef(null);
 
+    // Store references to markers for updating selection data
+    const markersRef = useRef({});
+
 
 
     // Handles a marker clicked, obj: the content, type: string - stop, bus..., marker: reference to actual map marker
     const handleMarkerClicked = useCallback((obj, type, marker) => {
         const id = obj.stop_id || obj.VehicleId || obj.id;
 
+        // Store marker reference for updates
+        markersRef.current[id] = marker;
+
         // Use the ref here to prevent needing 'selection' in the dependency array
         if (!selectionRef.current || id !== selectionRef.current.id || type !== selectionRef.current.type) {
             setSelection({ id, type, data: obj, marker });
+        } else {
+            // Same bus clicked - update data without triggering new selection
+            setSelection(prev => ({ ...prev, data: obj }));
         }
+    }, []);
+
+    // Update selection data when marker data changes (for real-time updates)
+    const updateSelectionData = useCallback((id, newData) => {
+        setSelection(prev => {
+            if (prev && prev.id === id) {
+                // Only update if the data reference is different
+                if (prev.data !== newData) {
+                    return { ...prev, data: newData };
+                }
+                return prev;
+            }
+            return prev;
+        });
     }, []);
 
     // Run when selection changes. For ANY - stops, buses
@@ -114,6 +137,7 @@ const SelectionsManager = ({ map, routeIds }) => {
                 routeIds={routeIds}
                 busClicked={handleMarkerClicked}
                 registerPinCreator={(type, fn) => { pinCreatorsRef.current[type] = fn; }}
+                updateSelectionData={updateSelectionData}
             />
             <PopupManager selection={selection} clearSelection={() => setSelection(null)} />
             {/*<button className="absolute top-5 left-20 z-50 bg-white p-2 rounded shadow" onClick={btnClk}>Click</button>*/}

@@ -52,7 +52,7 @@ export function createBusPin(color = 'gray', rotation = 0, withPing = false) {
 }
 
 
-const BusMarkers2 = ({ routeIds, map, busClicked, registerPinCreator }) => {
+const BusMarkers2 = ({ routeIds, map, busClicked, registerPinCreator, updateSelectionData }) => {
 
     const client = useApolloClient();
 
@@ -125,6 +125,9 @@ const BusMarkers2 = ({ routeIds, map, busClicked, registerPinCreator }) => {
                         if (svgElement) {
                             svgElement.style.transform = `rotate(${rotation}deg)`;
                         }
+
+                        // Update selection data if this bus is currently selected
+                        updateSelectionData?.(id, vehicle);
                     } else {
                         // Create new marker
                         const content = createBusPin(color, rotation, false);
@@ -138,7 +141,7 @@ const BusMarkers2 = ({ routeIds, map, busClicked, registerPinCreator }) => {
                         marker.vehicleData = vehicle;
 
                         marker.addListener('click', () => {
-                            busClicked(vehicle, 'bus', marker);
+                            busClicked(marker.vehicleData, 'bus', marker);
                         });
 
                         markersRef.current[id] = marker;
@@ -162,7 +165,7 @@ const BusMarkers2 = ({ routeIds, map, busClicked, registerPinCreator }) => {
         };
 
 
-    }, [routeIds, map, busClicked]);
+    }, [routeIds, map, busClicked, updateSelectionData]);
 
 
     return null;
