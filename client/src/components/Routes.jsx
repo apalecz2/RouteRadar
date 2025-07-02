@@ -1,31 +1,23 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
+import { useData } from './DataProvider';
 
 const Routes = ({ map, routeIds }) => {
     const polylinesRef = useRef([]);
-    const [routeData, setRouteData] = useState([]);
+    const { routes, loading, error } = useData();
 
     useEffect(() => {
-        const fetchRoutes = async () => {
-            try {
-                const response = await fetch('/routes.json');
-                const data = await response.json();
-                setRouteData(data);
-            } catch (err) {
-                console.error('Failed to load route geometry data:', err);
-            }
-        };
-
-        fetchRoutes();
-    }, []);
+        if (loading || error) return;
+        // No need to set state, just use routes directly
+    }, [loading, error]);
 
     useEffect(() => {
-        if (!map || routeData.length === 0) return;
+        if (!map || loading || error || !routes || routes.length === 0) return;
 
         // Clear old lines
         polylinesRef.current.forEach(polyline => polyline.setMap(null));
         polylinesRef.current = [];
 
-        routeData.forEach((route, idx) => {
+        routes.forEach((route, idx) => {
             if (routeIds.length > 0 && !routeIds.includes(route.id)) return;
 
             const color = getRouteColor(idx, 37);
@@ -60,7 +52,7 @@ const Routes = ({ map, routeIds }) => {
         return () => {
             polylinesRef.current.forEach(polyline => polyline.setMap(null));
         };
-    }, [map, routeData, routeIds]);
+    }, [map, routes, routeIds, loading, error]);
 
     return null;
 };

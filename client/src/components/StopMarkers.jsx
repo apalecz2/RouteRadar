@@ -2,7 +2,8 @@
 // attaches click listeners, to pass the stop clicked to the parent
 
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
+import { useData } from './DataProvider';
 
 // Helper to process json into maps for quick access
 const processStops = (stops) => {
@@ -14,8 +15,7 @@ const processStops = (stops) => {
 
         for (let route of stop.routes) {
             // Extract the route number, disregard the A, B suffix
-            route = route.match(/^\d+/)[0]
-            
+            route = route.match(/^[0-9]+/)[0]
             if (!stopsByRoute.has(route)) {
                 stopsByRoute.set(route, new Set());
             }
@@ -23,23 +23,6 @@ const processStops = (stops) => {
         }
     }
 
-    return { stopsById, stopsByRoute };
-};
-
-const useStops = () => {
-    const [stopsById, setStopsById] = useState(new Map());
-    const [stopsByRoute, setStopsByRoute] = useState(new Map());
-
-    useEffect(() => {
-        const fetchStops = async () => {
-            const res = await fetch('/stops.json');
-            const data = await res.json();
-            const { stopsById, stopsByRoute } = processStops(data);
-            setStopsById(stopsById);
-            setStopsByRoute(stopsByRoute);
-        };
-        fetchStops();
-    }, []);
     return { stopsById, stopsByRoute };
 };
 
@@ -72,22 +55,22 @@ export function createStopPin(colour = '#ffffff', withPing = false) {
     return wrapper;
 }
 
-
-
-
-
 // Based on the route selection, display the stops for the selection
 // Attach listeners to each marker, and pass to parent
 const StopMarkers = ({ map, routeIds, stopClicked, registerPinCreator }) => {
-
-    const { stopsById, stopsByRoute } = useStops();
+    const { stops, loading, error } = useData();
     const markersRef = useRef(new Map());
-    
+
     // Tell the parent where to call to create a pin
     useEffect(() => {
         registerPinCreator('stop', createStopPin);
     }, [registerPinCreator]);
-    
+
+    // Memoize processed stops
+    const { stopsById, stopsByRoute } = useMemo(() => {
+        if (!stops || stops.length === 0) return { stopsById: new Map(), stopsByRoute: new Map() };
+        return processStops(stops);
+    }, [stops]);
 
     const visibleStopIds = useMemo(() => {
         const stopIds = new Set();
@@ -103,8 +86,6 @@ const StopMarkers = ({ map, routeIds, stopClicked, registerPinCreator }) => {
     }, [routeIds, stopsByRoute]);
 
     useEffect(() => {
-        
-        // Validate that stop markers can / should be placed
         if (!map || stopsById.size === 0 || stopsByRoute.size === 0) return;
         // Add new markers
         visibleStopIds.forEach((stopId) => {
@@ -138,9 +119,7 @@ const StopMarkers = ({ map, routeIds, stopClicked, registerPinCreator }) => {
                 markersRef.current.delete(stopId);
             }
         }
-
     }, [map, visibleStopIds, stopsById, stopsByRoute, stopClicked]);
-
 
     useEffect(() => {
         // Cleanup all markers on unmount
@@ -153,7 +132,6 @@ const StopMarkers = ({ map, routeIds, stopClicked, registerPinCreator }) => {
     }, []);
 
     return null;
-
 }
 
 export default StopMarkers;

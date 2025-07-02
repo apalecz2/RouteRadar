@@ -1,21 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
+import { useData } from './DataProvider';
 
 const RouteSelection = ({ routeIds, setRouteIds, isOpen }) => {
-    const [allRoutes, setAllRoutes] = useState([]);
-
-    useEffect(() => {
-        const fetchRoutes = async () => {
-            try {
-                const response = await fetch('/routes.json');
-                const data = await response.json();
-                setAllRoutes([...new Set(data.map(route => route.id))]);
-            } catch (err) {
-                console.error('Failed to load route data:', err);
-            }
-        };
-
-        fetchRoutes();
-    }, []);
+    const { routes, loading, error } = useData();
+    const allRoutes = useMemo(() => {
+        if (!routes) return [];
+        return [...new Set(routes.map(route => route.id))];
+    }, [routes]);
 
     const handleToggleRoute = (route) => {
         setRouteIds(prev =>
