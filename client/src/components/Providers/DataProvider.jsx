@@ -1,7 +1,7 @@
 // Sets up a provider for the cached routes and stop json files
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { getCachedData } from '../utils/dataCache';
+import { getCachedData } from '../../utils/dataCache';
 
 const DataContext = createContext(null);
 

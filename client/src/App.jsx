@@ -4,7 +4,7 @@ import MapContainer from './components/MapContainer';
 import Menu2 from './components/Menu2'
 import TimeDisplay from './components/TimeDisplay';
 import SelectionsManager from './components/SelectionsManager';
-import TransitDirections from './components/TransitDirections';
+import TransitDirections from './components/Directions/TransitDirections';
 
 function App() {
     const [map, setMap] = useState(null);

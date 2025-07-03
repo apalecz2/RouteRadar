@@ -2,7 +2,7 @@
 // it creates the markers for these buses and passed the click handler to the parent to assign highlight and popups from there
 
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { gql, useApolloClient } from '@apollo/client';
 
 const VEHICLE_SUBSCRIPTION = gql`
@@ -52,7 +52,7 @@ export function createBusPin(color = 'gray', rotation = 0, withPing = false) {
 }
 
 
-const BusMarkers2 = ({ routeIds, map, busClicked, registerPinCreator, updateSelectionData }) => {
+const BusMarkers = ({ routeIds, map, busClicked, registerPinCreator, updateSelectionData }) => {
 
     const client = useApolloClient();
 
@@ -171,4 +171,4 @@ const BusMarkers2 = ({ routeIds, map, busClicked, registerPinCreator, updateSele
     return null;
 }
 
-export default BusMarkers2;
+export default BusMarkers;

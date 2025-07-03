@@ -5,10 +5,10 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 
-import StopMarkers from './StopMarkers';
-import BusMarkers2 from './BusMarkers2';
-import Routes from './Routes';
-import PopupManager from './PopupManager';
+import StopMarkers from './MarkersLines/StopMarkers';
+import BusMarkers from './MarkersLines/BusMarkers';
+import Routes from './MarkersLines/Routes';
+import PopupManager from './Popups/PopupManager';
 
 const SelectionsManager = ({ map, routeIds }) => {
 
@@ -183,7 +183,7 @@ const SelectionsManager = ({ map, routeIds }) => {
                 stopClicked={handleMarkerClicked}
                 registerPinCreator={(type, fn) => { pinCreatorsRef.current[type] = fn; }}
             />
-            <BusMarkers2
+            <BusMarkers
                 map={map}
                 routeIds={routeIds}
                 busClicked={handleMarkerClicked}
