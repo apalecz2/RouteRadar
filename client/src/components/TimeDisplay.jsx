@@ -17,27 +17,29 @@ const TimeDisplay = () => {
         minute: '2-digit',
         second: '2-digit',
     });
-    
+
     // For making the background red slightly
     // bg-[rgba(255,0,0,0.2)] dark:bg-[rgba(255,0,0,0.2)]
 
     return (
         <div
             className={`
-        fixed top-6 right-[5%] md:right-6 z-40
-        px-4 py-2
-        rounded-2xl
-        bg-white/10 dark:bg-white/5
-        backdrop-blur-2xl
-        border border-black/30 dark:border-black/30 shadow-xl
-        text-black dark:text-black
-        font-mono text-base md:text-base
-      `}
+    fixed top-8 right-8 md:right-12 md:top-12 z-40
+    px-4 py-2 h-12 
+    rounded-2xl
+    bg-white/10 dark:bg-white/5
+    backdrop-blur-2xl
+    border border-black/30 dark:border-black/30 shadow-xl
+    text-black dark:text-black
+    font-mono text-base
+    flex items-center justify-center
+  `}
         >
             <span key={animateKey} className="animate-fade-pulse block">
                 {formattedTime}
             </span>
         </div>
+
     );
 };
 

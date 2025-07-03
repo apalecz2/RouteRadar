@@ -1,7 +1,7 @@
-import { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { useData } from './Providers/DataProvider';
 
-const RouteSelection = ({ routeIds, setRouteIds, isOpen }) => {
+const RouteSelection = ({ routeIds, setRouteIds, isOpen, animatingOut, menuOrigin }) => {
     const { routes, loading, error } = useData();
     const allRoutes = useMemo(() => {
         if (!routes) return [];
@@ -16,36 +16,53 @@ const RouteSelection = ({ routeIds, setRouteIds, isOpen }) => {
         );
     };
 
-    if (!isOpen) return null;
+    // Animation state for smooth grow-in
+    const [animateIn, setAnimateIn] = useState(false);
+    useEffect(() => {
+        let raf;
+        if (isOpen && !animatingOut) {
+            setAnimateIn(false);
+            raf = requestAnimationFrame(() => setAnimateIn(true));
+        } else {
+            setAnimateIn(false);
+        }
+        return () => {
+            if (raf) cancelAnimationFrame(raf);
+            setAnimateIn(false);
+        };
+    }, [isOpen, animatingOut]);
+
+    if (!isOpen && !animatingOut) return null;
 
     return (
         <div
             className={`
-        fixed top-0 left-0 w-full h-full z-40
-        flex justify-center md:justify-start items-start
-        py-6 md:px-6
-        pointer-events-none
-      `}
+                fixed top-0 left-0 w-full h-full z-40
+                flex justify-center md:justify-start items-start
+                py-4 px-4 md:px-6 md:py-6
+                pointer-events-none
+            `}
         >
             <div
                 className={`
-          relative
-          w-full max-w-[90%] md:w-[420px]
-          min-h-[calc(100vh-4rem)] p-3 pt-2 overflow-y-auto z-50
-
-          rounded-2xl md:rounded-3xl
-          bg-white/10 dark:bg-white/5
-          backdrop-blur-2xl
-          border border-white/30 dark:border-white/15
-          shadow-2xl
-
-          before:content-[''] before:absolute before:inset-0
-          before:rounded-2xl md:before:rounded-3xl
-          before:bg-gradient-to-br before:from-white/40 before:to-white/0
-          before:pointer-events-none
-          
-          pointer-events-auto
-        `}
+                    relative
+                    w-full  md:w-[420px]
+                    min-h-[calc(100vh-4rem)] p-3 pt-2 overflow-y-auto z-50
+                    rounded-2xl md:rounded-3xl
+                    bg-white/10 dark:bg-white/5
+                    backdrop-blur-2xl
+                    border border-white/30 dark:border-white/15
+                    shadow-2xl
+                    before:content-[''] before:absolute before:inset-0
+                    before:rounded-2xl md:before:rounded-3xl
+                    before:bg-gradient-to-br before:from-white/40 before:to-white/0
+                    before:pointer-events-none
+                    pointer-events-auto
+                    menu-pop
+                    ${(isOpen && !animatingOut && animateIn) ? 'menu-pop-in' : ''}
+                    ${animatingOut ? 'menu-pop-out' : ''}
+                `}
+                style={{transformOrigin: `${menuOrigin.x}px ${menuOrigin.y}px`}}
             >
                 <div className="relative z-10 text-center">
                     <h2 className="text-black text-xl font-semibold mb-4">Menu</h2>
@@ -78,11 +95,13 @@ const RouteSelection = ({ routeIds, setRouteIds, isOpen }) => {
     );
 };
 
-const MenuButton = ({ onClick, isOpen }) => (
+const MenuButton = React.forwardRef(({ onClick, isOpen, disabled }, ref) => (
     <button
+      ref={ref}
       onClick={onClick}
+      disabled={disabled}
       className={`
-        fixed top-6 left-[5%] md:left-6 z-50
+        fixed top-8 left-8 md:left-12 md:top-12 z-50
         p-2 md:p-2
         rounded-2xl
         bg-white/10 dark:bg-white/5
@@ -117,23 +136,54 @@ const MenuButton = ({ onClick, isOpen }) => (
         />
       </svg>
     </button>
-  );
+  ));
 
 const Menu2 = ({ routeIds, setRouteIds }) => {
     const [menuOpen, setMenuOpen] = useState(false);
+    const [showMenu, setShowMenu] = useState(false);
+    const [menuShouldBeOpen, setMenuShouldBeOpen] = useState(false);
+    const [animatingOut, setAnimatingOut] = useState(false);
+    const [menuOrigin, setMenuOrigin] = useState({ x: 24, y: 24 });
+    const buttonRef = useRef(null);
 
     const toggleMenu = () => {
-        setMenuOpen(prev => !prev);
+        if (animatingOut) return;
+        if (menuOpen) {
+            setMenuOpen(false);
+            setAnimatingOut(true);
+            setMenuShouldBeOpen(false);
+            setTimeout(() => {
+                setAnimatingOut(false);
+                setShowMenu(false);
+            }, 500);
+        } else {
+            if (buttonRef.current) {
+                const rect = buttonRef.current.getBoundingClientRect();
+                setMenuOrigin({
+                    x: rect.left + rect.width / 2,
+                    y: rect.top + rect.height / 2
+                });
+            }
+            setMenuOpen(true);
+            setShowMenu(true);
+            setMenuShouldBeOpen(true);
+        }
     };
 
     return (
         <>
-            <MenuButton onClick={toggleMenu} isOpen={menuOpen} />
-            <RouteSelection
-                routeIds={routeIds}
-                setRouteIds={setRouteIds}
-                isOpen={menuOpen}
-            />
+            <div className="relative z-50">
+                <MenuButton ref={buttonRef} onClick={toggleMenu} isOpen={menuOpen} disabled={animatingOut} />
+            </div>
+            {showMenu && (
+                <RouteSelection
+                    routeIds={routeIds}
+                    setRouteIds={setRouteIds}
+                    isOpen={menuShouldBeOpen}
+                    animatingOut={animatingOut}
+                    menuOrigin={menuOrigin}
+                />
+            )}
         </>
     );
 };

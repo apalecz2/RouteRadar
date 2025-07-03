@@ -130,3 +130,19 @@
         opacity: 0;
     }
 }
+
+/* Menu pop animation for Menu2.jsx */
+.menu-pop {
+    opacity: 0;
+    transform: scale(0.7);
+    transition: opacity 0.5s cubic-bezier(0.4,0,0.2,1), transform 0.5s cubic-bezier(0.4,0,0.2,1);
+    pointer-events: auto;
+}
+.menu-pop.menu-pop-in {
+    opacity: 1;
+    transform: scale(1);
+}
+.menu-pop.menu-pop-out {
+    opacity: 0;
+    transform: scale(0.7);
+}
