@@ -7,6 +7,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 
 import StopMarkers from './StopMarkers';
 import BusMarkers2 from './BusMarkers2';
+import Routes from './Routes';
 import PopupManager from './PopupManager';
 
 const SelectionsManager = ({ map, routeIds }) => {
@@ -27,7 +28,7 @@ const SelectionsManager = ({ map, routeIds }) => {
     const markersRef = useRef({});
 
 
-    // Handles a marker clicked, obj: the content, type: string - stop, bus..., marker: reference to actual map marker
+    // Handles a marker clicked, obj: the content, type: string - stop, bus, route..., marker: reference to actual map marker
     const handleMarkerClicked = useCallback((obj, type, marker) => {
         const id = obj.stop_id || obj.VehicleId || obj.id;
 
@@ -81,6 +82,23 @@ const SelectionsManager = ({ map, routeIds }) => {
                 } else {
                     //console.log(`Stop data unchanged, ignoring click`);
                 }
+            } else if (type === 'route') {
+                // For routes, data rarely changes, so we don't update on re-click
+                // Only update if there are actual changes to route data
+                const currentData = selectionRef.current.data;
+                const newData = obj;
+                
+                const hasChanged = 
+                    currentData.name !== newData.name ||
+                    currentData.description !== newData.description ||
+                    currentData.segments?.length !== newData.segments?.length;
+                
+                if (hasChanged) {
+                    //console.log(`Route data changed, updating selection`);
+                    setSelection(prev => ({ ...prev, data: obj }));
+                } else {
+                    //console.log(`Route data unchanged, ignoring click`);
+                }
             }
         }
     }, []);
@@ -122,10 +140,16 @@ const SelectionsManager = ({ map, routeIds }) => {
                 if (selection.type === 'bus') {
                     const rotation = selection.data.Bearing || 0;
                     selection.marker.content = pinCreator('#ff0000', rotation, true);
+                } else if (selection.type === 'route') {
+                    // For routes, we might want to highlight the polyline differently
+                    // For now, we'll just store the selection without visual changes
+                    highlightedMarkerRef.current = selection;
                 } else {
                     selection.marker.content = pinCreator('#ff0000', true);
                 }
-                highlightedMarkerRef.current = selection;
+                if (selection.type !== 'route') {
+                    highlightedMarkerRef.current = selection;
+                }
             }
 
             //console.log('Selection updated:', selection);
@@ -134,7 +158,7 @@ const SelectionsManager = ({ map, routeIds }) => {
             if (highlightedMarkerRef.current) {
                 const prev = highlightedMarkerRef.current;
                 const pinCreator = pinCreatorsRef.current[prev.type];
-                if (pinCreator) {
+                if (pinCreator && prev.type !== 'route') {
                     if (prev.type === 'bus') {
                         const rotation = prev.data.Bearing || 0;
                         prev.marker.content = pinCreator('gray', rotation, false);
@@ -165,6 +189,12 @@ const SelectionsManager = ({ map, routeIds }) => {
                 busClicked={handleMarkerClicked}
                 registerPinCreator={(type, fn) => { pinCreatorsRef.current[type] = fn; }}
                 updateSelectionData={updateSelectionData}
+            />
+            <Routes
+                map={map}
+                routeIds={routeIds}
+                routeClicked={handleMarkerClicked}
+                selectedRouteId={selection?.type === 'route' ? selection.id : null}
             />
             <PopupManager selection={selection} clearSelection={() => setSelection(null)} />
         </>

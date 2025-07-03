@@ -1,8 +1,9 @@
 import { useEffect, useRef } from 'react';
 import { useData } from './DataProvider';
 
-const Routes = ({ map, routeIds }) => {
+const Routes = ({ map, routeIds, routeClicked, selectedRouteId }) => {
     const polylinesRef = useRef([]);
+    const routeMainPolylinesRef = useRef({}); // Store only main polylines by route ID
     const { routes, loading, error } = useData();
 
     useEffect(() => {
@@ -16,11 +17,19 @@ const Routes = ({ map, routeIds }) => {
         // Clear old lines
         polylinesRef.current.forEach(polyline => polyline.setMap(null));
         polylinesRef.current = [];
+        routeMainPolylinesRef.current = {};
 
         routes.forEach((route, idx) => {
             if (routeIds.length > 0 && !routeIds.includes(route.id)) return;
 
-            const color = getRouteColor(idx, 37);
+            // Use highlight color if this route is selected
+            const baseColor = getRouteColor(idx, 37);
+            const color = selectedRouteId === route.id ? '#ff0000' : baseColor;
+            const strokeWeight = selectedRouteId === route.id ? 6 : 4;
+            const strokeOpacity = selectedRouteId === route.id ? 1.0 : 0.7;
+
+            // Store main polylines for this route
+            routeMainPolylinesRef.current[route.id] = [];
 
             route.segments.forEach(segment => {
                 const path = segment.map(([lat, lng]) => ({ lat, lng }));
@@ -40,19 +49,45 @@ const Routes = ({ map, routeIds }) => {
                     path,
                     geodesic: true,
                     strokeColor: color,
-                    strokeOpacity: 0.7,
-                    strokeWeight: 4,
+                    strokeOpacity: strokeOpacity,
+                    strokeWeight: strokeWeight,
                     map,
-                    zIndex: 2,
+                    zIndex: selectedRouteId === route.id ? 10 : 2, // Higher z-index for selected route
                 });
+
+                // Add click event listener to the polyline
+                if (routeClicked) {
+                    polyline.addListener('click', (event) => {
+                        routeClicked(route, 'route', polyline, event);
+                    });
+                }
+
                 polylinesRef.current.push(polyline);
+                routeMainPolylinesRef.current[route.id].push(polyline); // Store only main polylines
             });
         });
 
         return () => {
             polylinesRef.current.forEach(polyline => polyline.setMap(null));
         };
-    }, [map, routes, routeIds, loading, error]);
+    }, [map, routes, routeIds, loading, error, routeClicked, selectedRouteId]);
+
+    // Effect to manage z-index when selection changes
+    useEffect(() => {
+        if (!map || !routes) return;
+
+        // Reset all routes to normal z-index
+        Object.keys(routeMainPolylinesRef.current).forEach(routeId => {
+            const mainPolylines = routeMainPolylinesRef.current[routeId];
+            if (mainPolylines) {
+                mainPolylines.forEach((polyline) => {
+                    if (polyline && typeof polyline.setZIndex === 'function') {
+                        polyline.setZIndex(selectedRouteId === routeId ? 10 : 2);
+                    }
+                });
+            }
+        });
+    }, [selectedRouteId, map, routes]);
 
     return null;
 };

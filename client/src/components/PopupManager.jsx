@@ -3,6 +3,7 @@ import { gql, useApolloClient } from '@apollo/client';
 import BottomPopup from './BottomPopup';
 import BusPopupContent from './BusPopupContent';
 import StopPopupContent from './StopPopupContent';
+import RoutePopupContent from './RoutePopupContent';
 
 const STOP_UPDATES_SUB = gql`
     subscription($stopId: String!) {
@@ -257,6 +258,20 @@ const PopupManager = ({ selection, clearSelection }) => {
                             }
                         }, 100); // Check after 100ms for immediate data
                     }
+                } else if (selection.type === 'route') {
+                    // Route selection - clean up any stop subscription
+                    cleanupSubscription('switching to route selection');
+                    
+                    lastPopupRef.current = selection;
+                    setActivePopup(curr => {
+                        if (curr) {
+                            setPopupQueue(selection);
+                            setIsClosing(true);
+                            return curr;
+                        } else {
+                            return selection;
+                        }
+                    });
                 } else {
                     // Bus selection - clean up any stop subscription
                     cleanupSubscription('switching to bus selection');
@@ -292,6 +307,10 @@ const PopupManager = ({ selection, clearSelection }) => {
                     const updatedPopup = { ...selection, arrivals: cachedArrivals };
                     lastPopupRef.current = updatedPopup;
                     return updatedPopup;
+                } else if (selection.type === 'route') {
+                    // For routes, just update with new data
+                    lastPopupRef.current = selection;
+                    return selection;
                 } else {
                     // For buses, just update with new data
                     lastPopupRef.current = selection;
@@ -317,6 +336,8 @@ const PopupManager = ({ selection, clearSelection }) => {
                         const updatedPopup = { ...popupQueue, arrivals: latestArrivals };
                         //console.log(`Queue transition: Updated popup with ${latestArrivals.length} arrivals for stop ${stopId}`);
                         setActivePopup(updatedPopup);
+                    } else if (popupQueue.type === 'route') {
+                        setActivePopup(popupQueue);
                     } else {
                         setActivePopup(popupQueue);
                     }
@@ -353,6 +374,9 @@ const PopupManager = ({ selection, clearSelection }) => {
             )}
             {activePopup?.type === 'bus' && (
                 <BusPopupContent bus={activePopup.data} />
+            )}
+            {activePopup?.type === 'route' && (
+                <RoutePopupContent route={activePopup.data} />
             )}
         </BottomPopup>
     );
