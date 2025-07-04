@@ -5,7 +5,7 @@ const CloseButton = ({ onClick }) => (
     <button
         onClick={onClick}
         className={`
-        fixed top-6 right-[5%] md:right-6 z-50
+        fixed top-6 right-6 md:right-6 z-50
         p-2 md:p-2
         rounded-2xl
         bg-white/10 dark:bg-white/5

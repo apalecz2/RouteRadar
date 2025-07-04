@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 
 function formatTime(unixSeconds) {
     const date = new Date(unixSeconds * 1000);
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', });
+    return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', second: '2-digit', });
 }
 
 function formatRelativeTime(unixSeconds) {
@@ -59,7 +59,7 @@ const StopPopupContent = ({ stop, arrivals = [] }) => {
 
     return (
         <>
-            <h2 className="text-lg font-semibold">{stop.name}</h2>
+            <h2 className="text-lg font-semibold pr-16">{stop.name}</h2>
             <p className="text-sm text-gray-300">Stop ID: {stop.stop_id}</p>
             {stop.routes && (
                 <p className="text-sm text-gray-400 mt-2">

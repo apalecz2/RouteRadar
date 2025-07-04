@@ -37,7 +37,7 @@ const RouteSelection = ({ routeIds, setRouteIds, isOpen, animatingOut, menuOrigi
     return (
         <div
             className={`
-                fixed top-0 left-0 w-full h-full z-40
+                fixed top-0 left-0 w-full h-full z-60
                 flex justify-center md:justify-start items-start
                 py-4 px-4 md:px-6 md:py-6
                 pointer-events-none
@@ -47,12 +47,11 @@ const RouteSelection = ({ routeIds, setRouteIds, isOpen, animatingOut, menuOrigi
                 className={`
                     relative
                     w-full  md:w-[420px]
-                    min-h-[calc(100vh-4rem)] p-3 pt-2 overflow-y-auto z-50
+                    min-h-[calc(100vh-4rem)] p-4 md:p-6 overflow-y-auto z-70
                     rounded-2xl md:rounded-3xl
                     bg-white/10 dark:bg-white/5
                     backdrop-blur-2xl
-                    border border-white/30 dark:border-white/15
-                    shadow-2xl
+                    border border-black/30 dark:border-black/30 shadow-2xl
                     before:content-[''] before:absolute before:inset-0
                     before:rounded-2xl md:before:rounded-3xl
                     before:bg-gradient-to-br before:from-white/40 before:to-white/0
@@ -64,8 +63,8 @@ const RouteSelection = ({ routeIds, setRouteIds, isOpen, animatingOut, menuOrigi
                 `}
                 style={{transformOrigin: `${menuOrigin.x}px ${menuOrigin.y}px`}}
             >
-                <div className="relative z-10 text-center">
-                    <h2 className="text-black text-xl font-semibold mb-4">Menu</h2>
+                <div className="relative z-10 text-center h-12 p-2 mb-6">
+                    <h2 className="text-black text-2xl font-semibold">Menu</h2>
                 </div>
                 <div>
                     <h3 className="font-medium mb-1">Select Routes</h3>
@@ -101,12 +100,12 @@ const MenuButton = React.forwardRef(({ onClick, isOpen, disabled }, ref) => (
       onClick={onClick}
       disabled={disabled}
       className={`
-        fixed top-8 left-8 md:left-12 md:top-12 z-50
+        fixed top-8 left-8 md:left-12 md:top-12 z-70
         p-2 md:p-2
         rounded-2xl
         bg-white/10 dark:bg-white/5
         backdrop-blur-2xl
-        ${isOpen ? '' : 'border border-black/30 dark:border-black/30 shadow-xl'}
+        border border-black/30 dark:border-black/30 shadow-xl
         hover:bg-white/50
         flex items-center justify-center
         h-12 w-12
@@ -172,7 +171,7 @@ const Menu2 = ({ routeIds, setRouteIds }) => {
 
     return (
         <>
-            <div className="relative z-50">
+            <div className="relative z-70">
                 <MenuButton ref={buttonRef} onClick={toggleMenu} isOpen={menuOpen} disabled={animatingOut} />
             </div>
             {showMenu && (
