@@ -192,28 +192,21 @@ const resolvers = {
             subscribe: async function* (_, { stopId }) {
                 const queue = [];
                 const handler = (payload) => {
-                    //console.log(`Server: Received payload for stop ${stopId}:`, payload);
-                    queue.push(payload);
+                    queue.push(payload); // payload is now an array of arrivals
                 };
                 eventEmitter.on(`${VEHICLE_UPDATE}_STOP_${stopId}`, handler);
                 
                 if (latestArrivalData.has(stopId)) {
-                    for (const arrival of latestArrivalData.get(stopId)) {
-                        queue.push(arrival);
-                    }
+                    queue.push(latestArrivalData.get(stopId));
                 }
-                //console.log(`Server: Subscription started for stop ${stopId}, initial queue length: ${queue.length}`);
-                
-
                 try {
                     while (true) {
                         if (queue.length === 0) {
-                            await new Promise(res => setTimeout(res, 100));
+                            await new Promise((res) => setTimeout(res, 100));
                             continue;
                         }
-                        const dataToSend = queue.splice(0, queue.length);
-                        //console.log(`Server: Sending ${dataToSend.length} arrivals for stop ${stopId}`);
-                        yield { stopUpdates: dataToSend };
+                        const nextArrivals = queue.shift();
+                        yield { stopUpdates: nextArrivals };
                     }
                 } finally {
                     //console.log(`Server: Subscription ended for stop ${stopId}`);

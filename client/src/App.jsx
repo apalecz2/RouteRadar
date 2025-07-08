@@ -6,6 +6,8 @@ import TimeDisplay from './components/TimeDisplay';
 import SelectionsManager from './components/SelectionsManager';
 import TransitDirections from './components/Directions/TransitDirections';
 
+import ConnectionMonitor from './components/ConnectionMonitor';
+
 function App() {
     const [map, setMap] = useState(null);
     const [routeIds, setRouteIds] = useState([]);
@@ -17,6 +19,7 @@ function App() {
             {map && <SelectionsManager map={map} routeIds={routeIds} />}
             <TimeDisplay />
             <Menu2 routeIds={routeIds} setRouteIds={setRouteIds} />
+            <ConnectionMonitor />
         </div>
     );
 }

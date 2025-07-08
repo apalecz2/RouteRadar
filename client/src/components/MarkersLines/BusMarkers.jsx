@@ -3,21 +3,8 @@
 
 
 import { useEffect, useRef } from 'react';
-import { gql, useApolloClient } from '@apollo/client';
-
-const VEHICLE_SUBSCRIPTION = gql`
-    subscription VehicleUpdates($routeId: String!) {
-        vehicleUpdates(routeId: $routeId) {
-            RouteId
-            Latitude
-            Longitude
-            Destination
-            VehicleId
-            Bearing
-            timestamp
-        }
-    }
-`;
+import { useApolloClient } from '@apollo/client';
+import subscriptionManager from '../../utils/subscriptionManager';
 
 
 // Export to allow calls from parent to set and reset highlight when it's selected or deselected
@@ -58,7 +45,7 @@ const BusMarkers = ({ routeIds, map, busClicked, registerPinCreator, updateSelec
 
     const markersRef = useRef({});
     const routeToVehicleMap = useRef({});
-    const subscriptionsRef = useRef({});
+    const subscriptionIdsRef = useRef({});
 
     // Tell the parent where to call to make pin
     useEffect(() => {
@@ -66,6 +53,8 @@ const BusMarkers = ({ routeIds, map, busClicked, registerPinCreator, updateSelec
     }, [registerPinCreator]);
 
     useEffect(() => {
+        // Set the Apollo client in the subscription manager
+        subscriptionManager.setClient(client);
 
         // Validate map reference
         if (!map || !window.google?.maps) return;
@@ -73,15 +62,18 @@ const BusMarkers = ({ routeIds, map, busClicked, registerPinCreator, updateSelec
         if (!AdvancedMarkerElement) return;
 
         const newRoutes = new Set(routeIds);
-        const currentRoutes = new Set(Object.keys(subscriptionsRef.current));
+        const currentRoutes = new Set(Object.keys(subscriptionIdsRef.current));
 
         const routesToRemove = [...currentRoutes].filter(r => !newRoutes.has(r));
         const routesToAdd = [...newRoutes].filter(r => !currentRoutes.has(r));
 
         // Unsubscribe and remove old routes
         for (const route of routesToRemove) {
-            subscriptionsRef.current[route]?.unsubscribe();
-            delete subscriptionsRef.current[route];
+            const subscriptionId = subscriptionIdsRef.current[route];
+            if (subscriptionId) {
+                subscriptionManager.unsubscribeCompletely(subscriptionId);
+                delete subscriptionIdsRef.current[route];
+            }
 
             const vehicleIds = routeToVehicleMap.current[route] || new Set();
             for (const id of vehicleIds) {
@@ -97,13 +89,8 @@ const BusMarkers = ({ routeIds, map, busClicked, registerPinCreator, updateSelec
         for (const routeId of routesToAdd) {
             routeToVehicleMap.current[routeId] = new Set();
 
-            const observable = client.subscribe({
-                query: VEHICLE_SUBSCRIPTION,
-                variables: { routeId },
-            });
-
-            const sub = observable.subscribe({
-                next({ data }) {
+            const subscriptionId = subscriptionManager.subscribeToVehicle(routeId, {
+                onNext: ({ data }) => {
                     const vehicle = data?.vehicleUpdates;
                     if (!vehicle) return;
 
@@ -147,18 +134,24 @@ const BusMarkers = ({ routeIds, map, busClicked, registerPinCreator, updateSelec
                         markersRef.current[id] = marker;
                     }
                 },
+                onError: (error) => {
+                    console.error(`Error in vehicle subscription for route ${routeId}:`, error);
+                },
+                onComplete: () => {
+                    console.log(`Vehicle subscription completed for route ${routeId}`);
+                }
             });
 
-            subscriptionsRef.current[routeId] = sub;
+            subscriptionIdsRef.current[routeId] = subscriptionId;
         }
 
 
         // Cleanup on unmount or routeIds change
         return () => {
-            for (const sub of Object.values(subscriptionsRef.current)) {
-                sub.unsubscribe();
+            for (const subscriptionId of Object.values(subscriptionIdsRef.current)) {
+                subscriptionManager.unsubscribeCompletely(subscriptionId);
             }
-            subscriptionsRef.current = {};
+            subscriptionIdsRef.current = {};
             Object.values(markersRef.current).forEach(marker => marker.map = null);
             markersRef.current = {};
             routeToVehicleMap.current = {};

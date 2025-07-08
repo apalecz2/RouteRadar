@@ -1,22 +1,11 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
-import { gql, useApolloClient } from '@apollo/client';
+//import { useApolloClient } from '@apollo/client';
+import subscriptionManager from '../../utils/subscriptionManager';
 import BottomPopup from './BottomPopup';
 import BusPopupContent from './BusPopupContent';
 import StopPopupContent from './StopPopupContent';
 import RoutePopupContent from './RoutePopupContent';
-
-const STOP_UPDATES_SUB = gql`
-    subscription($stopId: String!) {
-        stopUpdates(stopId: $stopId) {
-            stopId
-            routeId
-            tripId
-            arrivalTime
-            delaySeconds
-            timestamp
-        }
-    }
-`;
+import { connectionStatus } from '../../utils/connectionStatus';
 
 function getSelectionKey(sel) {
     if (!sel) return null;
@@ -29,8 +18,8 @@ const PopupManager = ({ selection, clearSelection }) => {
     const [popupQueue, setPopupQueue] = useState(null);
     const [isClosing, setIsClosing] = useState(false);
     const lastPopupRef = useRef(null);
-    const client = useApolloClient();
-    const currentSubscriptionRef = useRef(null);
+    //const client = useApolloClient();
+    const currentSubscriptionIdRef = useRef(null);
     const [selectionKey, setSelectionKey] = useState(null);
     // Cache for latest arrivals per stop
     const latestArrivalsRef = useRef({});
@@ -39,28 +28,33 @@ const PopupManager = ({ selection, clearSelection }) => {
 
     // Clean up subscription when component unmounts or selection changes
     const cleanupSubscription = (reason = 'unknown') => {
-        if (currentSubscriptionRef.current) {
+        if (currentSubscriptionIdRef.current) {
             //console.log(`Cleaning up subscription - Reason: ${reason}`);
-            currentSubscriptionRef.current.unsubscribe();
-            currentSubscriptionRef.current = null;
+            subscriptionManager.unsubscribeCompletely(currentSubscriptionIdRef.current);
+            currentSubscriptionIdRef.current = null;
             currentSubscribedStopRef.current = null;
         }
     };
 
     // Subscribe to stop updates
-    const subscribeToStopUpdates = useCallback((stopId) => {
-        if (!stopId || !client) return;
+    const subscribeToStopUpdates = useCallback((stopId, force = false) => {
+        //if (!stopId || !client) return;
+        if (!stopId) return;
 
-        // Check if we're already subscribed to this stop
-        if (currentSubscribedStopRef.current === stopId) {
-            //console.log(`Already subscribed to stop ${stopId}, skipping subscription`);
+        // Set the Apollo client in the subscription manager
+        //subscriptionManager.setClient(client);
+
+
+        // Skip if already subscribed and not forcing
+        if (!force && currentSubscribedStopRef.current === stopId) {
             return;
         }
 
+
         //console.log(`Subscribing to stop updates for: ${stopId}`);
-        
+
         // Clean up any existing subscription first
-        cleanupSubscription('new subscription for different stop');
+        cleanupSubscription(force ? 'forced resubscription' : 'new subscription for different stop');
 
         // Track the current subscribed stop
         currentSubscribedStopRef.current = stopId;
@@ -75,9 +69,9 @@ const PopupManager = ({ selection, clearSelection }) => {
             // Check if we have cached data and if it's fresh (less than 30 seconds old)
             const cachedArrivals = latestArrivalsRef.current[stopId];
             const now = Math.floor(Date.now() / 1000);
-            const isCachedDataFresh = cachedArrivals && cachedArrivals.length > 0 && 
+            const isCachedDataFresh = cachedArrivals && cachedArrivals.length > 0 &&
                 cachedArrivals.some(arrival => (now - arrival.timestamp) < 30);
-            
+
             if (isCachedDataFresh) {
                 //console.log(`Using fresh cached data for stop ${stopId}`);
                 hasReceivedInitialData = true;
@@ -87,73 +81,49 @@ const PopupManager = ({ selection, clearSelection }) => {
                 latestArrivalsRef.current[stopId] = [];
             }
 
-            const observable = client.subscribe({
-                query: STOP_UPDATES_SUB,
-                variables: { stopId },
-            });
-
-            const subscription = observable.subscribe({
-                next({ data }) {
-                    //console.log(`Subscription received data for stop ${stopId}:`, data);
+            const subscriptionId = subscriptionManager.subscribeToStop(stopId, {
+                onNext: ({ data }) => {
                     const arrivals = data?.stopUpdates;
-                    if (arrivals && Array.isArray(arrivals)) {
-                        //console.log(`Received ${arrivals.length} arrivals for stop ${stopId}`);
-                        
-                        // Clear the timeout since we received data
-                        if (timeoutId) {
-                            clearTimeout(timeoutId);
-                            timeoutId = null;
+                    if (!Array.isArray(arrivals)) return;
+
+                    // arrivals is now an array of StopArrival
+                    latestArrivalsRef.current[stopId] = arrivals;
+                    hasReceivedInitialData = true;
+
+                    // Refresh active popup if it matches this stop
+                    setActivePopup(prev => {
+                        if (prev?.type === 'stop' && prev.data?.stop_id === stopId) {
+                            const updatedPopup = { ...prev, arrivals };
+                            lastPopupRef.current = updatedPopup;
+                            return updatedPopup;
                         }
-                        
-                        // Reset retry count on successful data
-                        retryCount = 0;
-                        
-                        // Update cache with latest data
-                        latestArrivalsRef.current[stopId] = arrivals;
-                        
-                        // Mark that we've received data
-                        hasReceivedInitialData = true;
-                        
-                        // Update active popup if it's for this stop
-                        setActivePopup(prev => {
-                            if (prev?.type === 'stop' && prev.data?.stop_id === stopId) {
-                                //console.log(`Updating active popup for stop ${stopId} with ${arrivals.length} arrivals`);
-                                const updatedPopup = { ...prev, arrivals };
-                                lastPopupRef.current = updatedPopup;
-                                return updatedPopup;
-                            }
-                            return prev;
-                        });
-                        
-                        // Also update queued popup if it's for this stop
-                        setPopupQueue(prev => {
-                            if (prev?.type === 'stop' && prev.data?.stop_id === stopId) {
-                                //console.log(`Updating queued popup for stop ${stopId} with ${arrivals.length} arrivals`);
-                                const updatedPopup = { ...prev, arrivals };
-                                return updatedPopup;
-                            }
-                            return prev;
-                        });
-                    } else {
-                        console.log(`Received invalid data for stop ${stopId}:`, data);
-                    }
+                        return prev;
+                    });
+
+                    // Also refresh queued popup if needed
+                    setPopupQueue(prev => {
+                        if (prev?.type === 'stop' && prev.data?.stop_id === stopId) {
+                            return { ...prev, arrivals };
+                        }
+                        return prev;
+                    });
                 },
-                error(error) {
-                    console.error(`Error in stop subscription for ${stopId}:`, error);
+                onError: (error) => {
+                    console.log(`Error in stop subscription for ${stopId}:`, error);
                     console.error('Error details:', {
                         message: error.message,
                         graphQLErrors: error.graphQLErrors,
                         networkError: error.networkError,
                         extraInfo: error.extraInfo
                     });
-                    
+
                     // Clean up failed subscription
                     if (timeoutId) clearTimeout(timeoutId);
-                    
+
                     // Try to retry if we haven't exceeded max retries
                     if (retryCount < maxRetries && currentSubscribedStopRef.current === stopId) {
                         retryCount++;
-                        //console.log(`Retrying subscription for stop ${stopId} (attempt ${retryCount}/${maxRetries})`);
+                        console.log(`Retrying subscription for stop ${stopId} (attempt ${retryCount}/${maxRetries})`);
                         setTimeout(() => {
                             if (currentSubscribedStopRef.current === stopId) {
                                 createSubscription();
@@ -161,17 +131,17 @@ const PopupManager = ({ selection, clearSelection }) => {
                         }, 1000 * retryCount); // Exponential backoff
                     } else {
                         console.log(`Max retries exceeded for stop ${stopId}, giving up`);
-                        cleanupSubscription('subscription error - max retries exceeded');
+                        //cleanupSubscription('subscription error - max retries exceeded');
                     }
                 },
-                complete() {
-                    //console.log(`Subscription completed for stop ${stopId}`);
+                onComplete: () => {
+                    console.log(`Subscription completed for stop ${stopId}`);
                     if (timeoutId) clearTimeout(timeoutId);
                     cleanupSubscription('subscription completed');
                 }
             });
 
-            currentSubscriptionRef.current = subscription;
+            currentSubscriptionIdRef.current = subscriptionId;
         };
 
         // Start the subscription
@@ -190,7 +160,7 @@ const PopupManager = ({ selection, clearSelection }) => {
                     }
                     return prev;
                 });
-                
+
                 // Also update queued popup if it's for this stop
                 setPopupQueue(prev => {
                     if (prev?.type === 'stop' && prev.data?.stop_id === stopId && !prev.arrivals?.length) {
@@ -201,36 +171,37 @@ const PopupManager = ({ selection, clearSelection }) => {
                 });
             }
         }, 5000);
-    }, [client]);
+        //}, [client]);
+    }, []);
 
     // Only trigger popup animation if the selection identity changes
     useEffect(() => {
-        
+
         const newKey = getSelectionKey(selection);
         if (newKey !== selectionKey) {
             // Selection identity changed - this is a new selection
             //console.log(`Popup: Selection identity changed from ${selectionKey} to ${newKey}`);
             setSelectionKey(newKey);
-            
+
             if (selection) {
                 if (selection.type === 'stop') {
                     const stopId = selection.data?.stop_id;
                     //console.log(`New stop selection: ${stopId}`);
-                    
+
                     // Check if we have fresh cached data
                     const cachedArrivals = latestArrivalsRef.current[stopId];
                     const now = Math.floor(Date.now() / 1000);
-                    const isCachedDataFresh = cachedArrivals && cachedArrivals.length > 0 && 
+                    const isCachedDataFresh = cachedArrivals && cachedArrivals.length > 0 &&
                         cachedArrivals.some(arrival => (now - arrival.timestamp) < 30);
-                    
+
                     // Start subscription immediately (this will handle cleanup if needed)
                     subscribeToStopUpdates(stopId);
-                    
+
                     // Use cached data only if it's fresh, otherwise start with empty array
                     const initialArrivals = isCachedDataFresh ? cachedArrivals : [];
                     const popupWithArrivals = { ...selection, arrivals: initialArrivals };
                     lastPopupRef.current = popupWithArrivals;
-                    
+
                     setActivePopup(curr => {
                         if (curr) {
                             setPopupQueue(popupWithArrivals);
@@ -240,7 +211,7 @@ const PopupManager = ({ selection, clearSelection }) => {
                             return popupWithArrivals;
                         }
                     });
-                    
+
                     // If we don't have fresh cached data, set a short timeout to check for immediate updates
                     if (!isCachedDataFresh) {
                         setTimeout(() => {
@@ -261,7 +232,7 @@ const PopupManager = ({ selection, clearSelection }) => {
                 } else if (selection.type === 'route') {
                     // Route selection - clean up any stop subscription
                     cleanupSubscription('switching to route selection');
-                    
+
                     lastPopupRef.current = selection;
                     setActivePopup(curr => {
                         if (curr) {
@@ -275,7 +246,7 @@ const PopupManager = ({ selection, clearSelection }) => {
                 } else {
                     // Bus selection - clean up any stop subscription
                     cleanupSubscription('switching to bus selection');
-                    
+
                     lastPopupRef.current = selection;
                     setActivePopup(curr => {
                         if (curr) {
@@ -299,7 +270,7 @@ const PopupManager = ({ selection, clearSelection }) => {
             //console.log(`Popup: Same selection ${newKey}, updating data in place`);
             setActivePopup(prev => {
                 if (!prev) return prev;
-                
+
                 // For stops, preserve arrivals data
                 if (selection.type === 'stop') {
                     const stopId = selection.data?.stop_id;
@@ -357,6 +328,53 @@ const PopupManager = ({ selection, clearSelection }) => {
         };
     }, []);
 
+
+    // This is so that the popup goes back to automatically updating after reconnection, if popup was open before
+/*
+    const lastReconnectAttempt = useRef(0);
+    // Track if we've seen a disconnection before
+const hasDisconnectedRef = useRef(false);
+
+useEffect(() => {
+    const unsubscribe = connectionStatus.subscribe(({ connected }) => {
+        if (!connected) {
+            hasDisconnectedRef.current = true;
+        }
+
+        if (
+            connected &&
+            hasDisconnectedRef.current && // Only resubscribe if we've disconnected before
+            selection?.type === 'stop' &&
+            currentSubscribedStopRef.current
+        ) {
+            const now = Date.now();
+            if (now - lastReconnectAttempt.current < 5000) return;
+            lastReconnectAttempt.current = now;
+
+            const stopId = currentSubscribedStopRef.current;
+
+            console.log('[PopupManager] Reconnected, forcibly re-subscribing to stop:', stopId);
+            subscribeToStopUpdates(stopId, true);
+
+            // Force update popup with latest arrivals (after reconnect)
+            const latestArrivals = latestArrivalsRef.current[stopId] || [];
+            setActivePopup(prev => {
+                if (prev?.type === 'stop' && prev.data?.stop_id === stopId) {
+                    const updated = { ...prev, arrivals: latestArrivals };
+                    lastPopupRef.current = updated;
+                    return updated;
+                }
+                return prev;
+            });
+        }
+    });
+
+    return unsubscribe;
+}, [selection, subscribeToStopUpdates]);
+*/
+
+
+
     const popupIdentity = activePopup
         ? `${activePopup.type}:${activePopup.data?.stop_id || activePopup.data?.VehicleId}`
         : null;
@@ -365,7 +383,7 @@ const PopupManager = ({ selection, clearSelection }) => {
         <BottomPopup
             open={!isClosing && !!activePopup}
             popupType={popupIdentity}
-            onClose={() => {}}
+            onClose={() => { }}
             isClosing={isClosing}
             triggerClose={clearSelection}
         >

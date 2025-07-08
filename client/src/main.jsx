@@ -9,6 +9,10 @@ import { ApolloProvider } from '@apollo/client';
 import { client } from './graph/apolloClient';
 import { DataProvider } from './components/Providers/DataProvider';
 
+import subscriptionManager from './utils/subscriptionManager.js';
+
+subscriptionManager.setClient(client)
+
 createRoot(document.getElementById('root')).render(
     <StrictMode>
         {/*<ErrorBoundary>*/}
