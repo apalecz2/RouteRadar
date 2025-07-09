@@ -1,4 +1,4 @@
-import { gql, useApolloClient } from '@apollo/client';
+import { gql } from '@apollo/client';
 
 // GraphQL subscriptions
 const VEHICLE_SUBSCRIPTION = gql`
@@ -41,7 +41,7 @@ class SubscriptionManager {
 
     // Generate unique subscription ID
     generateSubscriptionId(type, variables) {
-        const key = type === 'vehicle' 
+        const key = type === 'vehicle'
             ? `vehicle:${variables.routeId}`
             : `stop:${variables.stopId}`;
         return key;
@@ -55,7 +55,7 @@ class SubscriptionManager {
         }
 
         const subscriptionId = this.generateSubscriptionId('vehicle', { routeId });
-        
+
         // If already subscribed, return existing subscription
         if (this.activeSubscriptions.has(subscriptionId)) {
             const existing = this.activeSubscriptions.get(subscriptionId);
@@ -108,21 +108,21 @@ class SubscriptionManager {
 
     // Subscribe to stop updates
     subscribeToStop(stopId, callbacks) {
-        
+
         if (!this.client) {
             console.error('Apollo client not set in SubscriptionManager');
             return null;
         }
 
         const subscriptionId = this.generateSubscriptionId('stop', { stopId });
-        
+
         // If already subscribed, return existing subscription
         if (this.activeSubscriptions.has(subscriptionId)) {
             const existing = this.activeSubscriptions.get(subscriptionId);
             const safeCallbacks = Array.isArray(callbacks) ? callbacks : [callbacks];
             existing.callbacks.push(...safeCallbacks);
-            
-            
+
+
             return subscriptionId;
         }
 
@@ -151,7 +151,6 @@ class SubscriptionManager {
                 }
             },
             complete: () => {
-                console.log('complete')
                 const activeSub = this.activeSubscriptions.get(subscriptionId);
                 if (activeSub) {
                     activeSub.callbacks.forEach(callback => {
@@ -236,7 +235,7 @@ class SubscriptionManager {
     // Resubscribe to all active subscriptions (useful for reconnection scenarios)
     resubscribeAll() {
         const subscriptionsToResubscribe = Array.from(this.activeSubscriptions.entries());
-        
+
         // Clear current subscriptions
         for (const [id, sub] of this.activeSubscriptions) {
             sub.subscription.unsubscribe();

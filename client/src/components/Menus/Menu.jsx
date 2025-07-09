@@ -4,33 +4,33 @@ import React, { useState, useEffect, useRef, createContext, useContext } from "r
 const MenuContext = createContext();
 
 export const useMenuContext = () => {
-  const context = useContext(MenuContext);
-  if (!context) {
-    throw new Error('useMenuContext must be used within a MenuProvider');
-  }
-  return context;
+    const context = useContext(MenuContext);
+    if (!context) {
+        throw new Error('useMenuContext must be used within a MenuProvider');
+    }
+    return context;
 };
 
 export const MenuProvider = ({ children }) => {
-  const [openMenuId, setOpenMenuId] = useState(null);
+    const [openMenuId, setOpenMenuId] = useState(null);
 
-  const openMenu = (menuId) => {
-    setOpenMenuId(menuId);
-  };
+    const openMenu = (menuId) => {
+        setOpenMenuId(menuId);
+    };
 
-  const closeMenu = () => {
-    setOpenMenuId(null);
-  };
+    const closeMenu = () => {
+        setOpenMenuId(null);
+    };
 
-  const isMenuOpen = (menuId) => {
-    return openMenuId === menuId;
-  };
+    const isMenuOpen = (menuId) => {
+        return openMenuId === menuId;
+    };
 
-  return (
-    <MenuContext.Provider value={{ openMenu, closeMenu, isMenuOpen, openMenuId }}>
-      {children}
-    </MenuContext.Provider>
-  );
+    return (
+        <MenuContext.Provider value={{ openMenu, closeMenu, isMenuOpen, openMenuId }}>
+            {children}
+        </MenuContext.Provider>
+    );
 };
 
 const MenuButton = React.forwardRef(({ onClick, isOpen, disabled, children, className, ...props }, ref) => (
@@ -60,7 +60,7 @@ const CloseButton = ({ onClick }) => (
     <button
         onClick={onClick}
         className={`
-            absolute top-4 right-4 z-20
+            absolute top-6 right-6 z-20
             p-2 md:p-2
             rounded-2xl
             bg-white/10 dark:bg-white/5
@@ -82,7 +82,7 @@ const CloseButton = ({ onClick }) => (
                 transition-transform duration-500 ease-in-out
             `}
         >
-            <path d="M480-424 284-228q-11 11-28 11t-28-11q-11-11-11-28t11-28l196-196-196-196q-11-11-11-28t11-28q11-11 28-11t28 11l196 196 196-196q11-11 28-11t28 11q11 11 11 28t-11 28L536-480l196 196q11 11 11 28t-11 28q-11 11-28 11t-28-11L480-424Z"/>
+            <path d="M480-424 284-228q-11 11-28 11t-28-11q-11-11-11-28t11-28l196-196-196-196q-11-11-11-28t11-28q11-11 28-11t28 11l196 196 196-196q11-11 28-11t28 11q11 11 11 28t-11 28L536-480l196 196q11 11 11 28t-11 28q-11 11-28 11t-28-11L480-424Z" />
         </svg>
     </button>
 );
@@ -133,7 +133,7 @@ const MenuContent = ({ children, isOpen, animatingOut, menuOrigin, title, onClos
                     ${(isOpen && !animatingOut && animateIn) ? 'menu-pop-in' : ''}
                     ${animatingOut ? 'menu-pop-out' : ''}
                 `}
-                style={{transformOrigin: `${menuOrigin.x}px ${menuOrigin.y}px`}}
+                style={{ transformOrigin: `${menuOrigin.x}px ${menuOrigin.y}px` }}
             >
                 <CloseButton onClick={onClose} />
                 {title && (
@@ -147,10 +147,10 @@ const MenuContent = ({ children, isOpen, animatingOut, menuOrigin, title, onClos
     );
 };
 
-const AbstractMenu = ({ 
-    children, 
-    buttonContent, 
-    title, 
+const AbstractMenu = ({
+    children,
+    buttonContent,
+    title,
     buttonClassName,
     buttonProps = {},
     onMenuToggle,
@@ -165,7 +165,7 @@ const AbstractMenu = ({
     const [animatingOut, setAnimatingOut] = useState(false);
     const [menuOrigin, setMenuOrigin] = useState({ x: 24, y: 24 });
     const buttonRef = useRef(null);
-    
+
     const { openMenu, closeMenu, isMenuOpen, openMenuId } = useMenuContext();
 
     const isOpen = isControlled ? controlledIsOpen : menuOpen;
@@ -188,7 +188,7 @@ const AbstractMenu = ({
 
     const openMenuHandler = () => {
         if (animatingOut) return;
-        
+
         if (buttonRef.current) {
             const rect = buttonRef.current.getBoundingClientRect();
             setMenuOrigin({
@@ -207,7 +207,7 @@ const AbstractMenu = ({
 
     const closeMenuHandler = () => {
         if (animatingOut) return;
-        
+
         const newOpenState = false;
         if (!isControlled) setMenuOpen(newOpenState);
         if (menuId) closeMenu();
@@ -224,10 +224,10 @@ const AbstractMenu = ({
     return (
         <>
             <div className="relative z-70">
-                <MenuButton 
-                    ref={buttonRef} 
-                    onClick={openMenuHandler} 
-                    isOpen={isThisMenuOpen} 
+                <MenuButton
+                    ref={buttonRef}
+                    onClick={openMenuHandler}
+                    isOpen={isThisMenuOpen}
                     disabled={animatingOut}
                     className={buttonClassName}
                     {...buttonProps}

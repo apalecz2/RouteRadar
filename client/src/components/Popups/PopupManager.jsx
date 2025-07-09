@@ -330,48 +330,48 @@ const PopupManager = ({ selection, clearSelection }) => {
 
 
     // This is so that the popup goes back to automatically updating after reconnection, if popup was open before
-/*
-    const lastReconnectAttempt = useRef(0);
-    // Track if we've seen a disconnection before
-const hasDisconnectedRef = useRef(false);
-
-useEffect(() => {
-    const unsubscribe = connectionStatus.subscribe(({ connected }) => {
-        if (!connected) {
-            hasDisconnectedRef.current = true;
-        }
-
-        if (
-            connected &&
-            hasDisconnectedRef.current && // Only resubscribe if we've disconnected before
-            selection?.type === 'stop' &&
-            currentSubscribedStopRef.current
-        ) {
-            const now = Date.now();
-            if (now - lastReconnectAttempt.current < 5000) return;
-            lastReconnectAttempt.current = now;
-
-            const stopId = currentSubscribedStopRef.current;
-
-            console.log('[PopupManager] Reconnected, forcibly re-subscribing to stop:', stopId);
-            subscribeToStopUpdates(stopId, true);
-
-            // Force update popup with latest arrivals (after reconnect)
-            const latestArrivals = latestArrivalsRef.current[stopId] || [];
-            setActivePopup(prev => {
-                if (prev?.type === 'stop' && prev.data?.stop_id === stopId) {
-                    const updated = { ...prev, arrivals: latestArrivals };
-                    lastPopupRef.current = updated;
-                    return updated;
-                }
-                return prev;
-            });
-        }
-    });
-
-    return unsubscribe;
-}, [selection, subscribeToStopUpdates]);
-*/
+    /*
+        const lastReconnectAttempt = useRef(0);
+        // Track if we've seen a disconnection before
+    const hasDisconnectedRef = useRef(false);
+    
+    useEffect(() => {
+        const unsubscribe = connectionStatus.subscribe(({ connected }) => {
+            if (!connected) {
+                hasDisconnectedRef.current = true;
+            }
+    
+            if (
+                connected &&
+                hasDisconnectedRef.current && // Only resubscribe if we've disconnected before
+                selection?.type === 'stop' &&
+                currentSubscribedStopRef.current
+            ) {
+                const now = Date.now();
+                if (now - lastReconnectAttempt.current < 5000) return;
+                lastReconnectAttempt.current = now;
+    
+                const stopId = currentSubscribedStopRef.current;
+    
+                console.log('[PopupManager] Reconnected, forcibly re-subscribing to stop:', stopId);
+                subscribeToStopUpdates(stopId, true);
+    
+                // Force update popup with latest arrivals (after reconnect)
+                const latestArrivals = latestArrivalsRef.current[stopId] || [];
+                setActivePopup(prev => {
+                    if (prev?.type === 'stop' && prev.data?.stop_id === stopId) {
+                        const updated = { ...prev, arrivals: latestArrivals };
+                        lastPopupRef.current = updated;
+                        return updated;
+                    }
+                    return prev;
+                });
+            }
+        });
+    
+        return unsubscribe;
+    }, [selection, subscribeToStopUpdates]);
+    */
 
 
 
