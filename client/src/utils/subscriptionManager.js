@@ -108,7 +108,7 @@ class SubscriptionManager {
 
     // Subscribe to stop updates
     subscribeToStop(stopId, callbacks) {
-        console.log('here')
+        
         if (!this.client) {
             console.error('Apollo client not set in SubscriptionManager');
             return null;

@@ -146,3 +146,22 @@
     opacity: 0;
     transform: scale(0.7);
 }
+
+/* Remove connection-btn, connection-btn-disconnected, connection-btn-reconnecting, connection-btn-reconnected, and connection-fade-out classes. Only keep the animation keyframes and classes for reconnecting-bg and connection-fade-out. */
+
+@keyframes reconnecting-bg {
+  0% { background: rgba(255, 0, 0, 0.18); }
+  50% { background: rgba(255, 140, 0, 0.18); }
+  100% { background: rgba(255, 0, 0, 0.18); }
+}
+@keyframes connection-fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+.connection-btn-reconnecting {
+  animation: reconnecting-bg 1.2s linear infinite;
+}
+.connection-fade-out {
+  animation: connection-fade-out 0.5s forwards;
+}
