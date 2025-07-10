@@ -41,7 +41,7 @@ const ConnectionStatusContent = ({ status }) => {
         <div className="space-y-4">
             <div className="flex items-center justify-between p-3 bg-black/10 rounded-lg">
                 <div className="flex items-center space-x-3">
-                    <span className="text-2xl">{getStatusIcon()}</span>
+                    <span className="text-2xl">{/*getStatusIcon()*/}</span>
                     <div>
                         <div className={`font-semibold ${getStatusColor()}`}>
                             {getStatusText()}
@@ -74,7 +74,7 @@ const ConnectionStatusContent = ({ status }) => {
             {!status.connected && (
                 <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
                     <div className="flex items-center space-x-2">
-                        <span className="text-red-600">⚠️</span>
+                        <span className="text-red-600"></span>
                         <span className="text-sm text-red-800">
                             Connection lost. The app will attempt to reconnect automatically.
                         </span>
@@ -163,8 +163,6 @@ export default function ConnectionMonitor() {
     // Don't show the button if not needed
     if (!show && status.connected && status.retryCount === 0) return null;
 
-    let baseTailwind =
-        'fixed top-22 left-8 md:left-12 md:top-26 z-70 flex items-center justify-center h-12 w-12 rounded-2xl border shadow-xl outline-none focus-visible:ring-2 focus-visible:ring-black/40 focus-visible:ring-offset-2 pointer-events-auto transition-all duration-300';
     let bgTailwind = 'bg-white/10 border-black/30';
     let extra = '';
     let isClickable = false;
@@ -200,7 +198,8 @@ export default function ConnectionMonitor() {
             menuId="connection-menu"
             title="Connection Status"
             buttonContent={ConnectionButtonContent}
-            buttonClassName={`${baseTailwind} ${bgTailwind} ${extra}`}
+            order={2}
+            buttonClassName={`${bgTailwind} ${extra}`}
             buttonProps={{
                 disabled: !isClickable,
                 title: !status.connected && status.retryCount > 0

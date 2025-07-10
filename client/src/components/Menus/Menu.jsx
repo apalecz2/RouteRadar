@@ -33,28 +33,49 @@ export const MenuProvider = ({ children }) => {
     );
 };
 
-const MenuButton = React.forwardRef(({ onClick, isOpen, disabled, children, className, ...props }, ref) => (
-    <button
-        ref={ref}
-        onClick={onClick}
-        disabled={disabled}
-        className={`
-            fixed top-8 left-8 md:left-12 md:top-12 z-70
-            p-2 md:p-2
-            rounded-2xl
-            bg-white/10 dark:bg-white/5
-            backdrop-blur-2xl
-            border border-black/30 dark:border-black/30 shadow-xl
-            hover:bg-white/50
-            flex items-center justify-center
-            h-12 w-12
-            ${className || ''}
-        `}
-        {...props}
-    >
-        {typeof children === 'function' ? children({ isOpen }) : children}
-    </button>
-));
+const MenuButton = React.forwardRef(({ onClick, isOpen, disabled, children, className, position = "top-left", order = 0, ...props }, ref) => {
+    const getPositionClasses = () => {
+        const baseClasses = "left-8 md:left-12";
+        
+        switch (position) {
+            case "top-right":
+                return `top-8 right-8 md:right-12 md:top-12`;
+            case "top-left":
+            default:
+                // Calculate top position based on order
+                if (order === 0) return `top-8 md:top-12 ${baseClasses}`;
+                if (order === 1) return `top-22 md:top-26 ${baseClasses}`;
+                if (order === 2) return `top-34 md:top-40 ${baseClasses}`;
+                if (order === 3) return `top-50 md:top-54 ${baseClasses}`;
+                if (order === 4) return `top-64 md:top-68 ${baseClasses}`;
+                // Default fallback
+                return `top-8 md:top-12 ${baseClasses}`;
+        }
+    };
+
+    return (
+        <button
+            ref={ref}
+            onClick={onClick}
+            disabled={disabled}
+            className={`
+                fixed ${getPositionClasses()} z-70
+                p-2 md:p-2
+                rounded-2xl
+                bg-white/10 dark:bg-white/5
+                backdrop-blur-2xl
+                border border-black/30 dark:border-black/30 shadow-xl
+                hover:bg-white/50
+                flex items-center justify-center
+                h-12 w-12
+                ${className || ''}
+            `}
+            {...props}
+        >
+            {typeof children === 'function' ? children({ isOpen }) : children}
+        </button>
+    );
+});
 
 const CloseButton = ({ onClick }) => (
     <button
@@ -157,7 +178,9 @@ const AbstractMenu = ({
     isControlled = false,
     isOpen: controlledIsOpen,
     onOpenChange,
-    menuId
+    menuId,
+    position = "top-left",
+    order = 0
 }) => {
     const [menuOpen, setMenuOpen] = useState(false);
     const [showMenu, setShowMenu] = useState(false);
@@ -230,6 +253,8 @@ const AbstractMenu = ({
                     isOpen={isThisMenuOpen}
                     disabled={animatingOut}
                     className={buttonClassName}
+                    position={position}
+                    order={order}
                     {...buttonProps}
                 >
                     {buttonContent}

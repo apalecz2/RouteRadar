@@ -1,7 +1,8 @@
 import { useState } from 'react';
 
 import MapContainer from './components/MapContainer';
-import Menu2 from './components/Menus/SelectMenu'
+import SelectMenu from './components/Menus/SelectMenu'
+import HelpMenu from './components/Menus/HelpMenu';
 import TimeDisplay from './components/TimeDisplay';
 import SelectionsManager from './components/SelectionsManager';
 import TransitDirections from './components/Directions/TransitDirections';
@@ -20,7 +21,8 @@ function App() {
                 {/*<TransitDirections map={map} />*/}
                 {map && <SelectionsManager map={map} routeIds={routeIds} />}
                 <TimeDisplay />
-                <Menu2 routeIds={routeIds} setRouteIds={setRouteIds} />
+                <SelectMenu routeIds={routeIds} setRouteIds={setRouteIds} />
+                <HelpMenu />
                 <ConnectionMonitor />
             </div>
         </MenuProvider>

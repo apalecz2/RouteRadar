@@ -19,7 +19,8 @@ const RouteSelection = ({ routeIds, setRouteIds }) => {
 
     return (
         <div>
-            <h3 className="font-medium mb-1">Select Routes</h3>
+            <h3 className="font-medium mb-1">Routes:</h3>
+            <p className="text-sm mb-1">(Click to Add)</p>
             <ul className="space-y-1 max-h-[calc(100vh-16rem)] overflow-y-auto">
                 {allRoutes.map(route => {
                     const isSelected = routeIds.includes(route);
@@ -60,8 +61,9 @@ const Menu2 = ({ routeIds, setRouteIds }) => {
     return (
         <AbstractMenu
             menuId="main-menu"
-            title="Menu"
+            title="Route Selection"
             buttonContent={MenuButtonContent}
+            order={0}
             buttonProps={{
                 "aria-label": "Open Menu"
             }}
