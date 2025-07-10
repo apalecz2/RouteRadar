@@ -123,6 +123,76 @@ const TRIP_UPDATE_URL = 'http://gtfs.ltconline.ca/TripUpdate/TripUpdates.json';
 const VEHICLE_UPDATE = 'VEHICLE_UPDATE';
 
 const eventEmitter = new EventEmitter();
+// Increase max listeners to handle rapid subscription changes
+eventEmitter.setMaxListeners(100);
+
+// Separate cleanup system for EventEmitter listeners
+const subscriptionCleanup = {
+    activeSubscriptions: new Map(), // track active subscriptions
+    cleanupInterval: null,
+    
+    // Register a subscription for cleanup tracking
+    registerSubscription: function(subscriptionId, eventName, handler) {
+        this.activeSubscriptions.set(subscriptionId, {
+            eventName,
+            handler,
+            timestamp: Date.now()
+        });
+    },
+    
+    // Unregister a subscription from cleanup tracking
+    unregisterSubscription: function(subscriptionId) {
+        this.activeSubscriptions.delete(subscriptionId);
+    },
+    
+    // Force cleanup of orphaned listeners
+    cleanupOrphanedListeners: function() {
+        const now = Date.now();
+        const maxAge = 5 * 60 * 1000; // 5 minutes
+        
+        for (const [subscriptionId, subscription] of this.activeSubscriptions.entries()) {
+            if (now - subscription.timestamp > maxAge) {
+                console.log(`Cleaning up stale subscription: ${subscriptionId}`);
+                eventEmitter.off(subscription.eventName, subscription.handler);
+                this.activeSubscriptions.delete(subscriptionId);
+            }
+        }
+        
+        // Log current listener counts for debugging
+        const eventNames = eventEmitter.eventNames();
+        eventNames.forEach(eventName => {
+            const count = eventEmitter.listenerCount(eventName);
+            if (count > 5) {
+                console.log(`Warning: ${eventName} has ${count} listeners`);
+            }
+        });
+    },
+    
+    // Immediate cleanup for specific event
+    cleanupEventListeners: function(eventName) {
+        const count = eventEmitter.listenerCount(eventName);
+        if (count > 10) {
+            console.log(`Cleaning up ${count} listeners for ${eventName}`);
+            // Remove all listeners for this event and let them be re-added
+            eventEmitter.removeAllListeners(eventName);
+        }
+    },
+    
+    // Start the cleanup system
+    start: function() {
+        this.cleanupInterval = setInterval(() => {
+            this.cleanupOrphanedListeners();
+        }, 30000); // Run every 30 seconds
+    },
+    
+    // Stop the cleanup system
+    stop: function() {
+        if (this.cleanupInterval) {
+            clearInterval(this.cleanupInterval);
+            this.cleanupInterval = null;
+        }
+    }
+};
 
 const latestVehicleData = new Map(); // Key: routeId, Value: Array of vehicle objects
 const latestArrivalData = new Map(); 
@@ -163,9 +233,16 @@ const resolvers = {
             subscribe: async function* (_, { routeId }) {
                 const eventName = `${VEHICLE_UPDATE}_${routeId}`;
                 const queue = [];
+                const subscriptionId = `vehicle_${routeId}_${Date.now()}`;
+
+                // Check and cleanup if too many listeners exist
+                subscriptionCleanup.cleanupEventListeners(eventName);
 
                 const handler = (payload) => queue.push(payload);
                 eventEmitter.on(eventName, handler);
+                
+                // Register with cleanup system
+                subscriptionCleanup.registerSubscription(subscriptionId, eventName, handler);
 
                 // Immediately enqueue latest data for this routeId
                 if (latestVehicleData.has(routeId)) {
@@ -185,16 +262,26 @@ const resolvers = {
                     }
                 } finally {
                     eventEmitter.off(eventName, handler);
+                    subscriptionCleanup.unregisterSubscription(subscriptionId);
                 }
             },
         },
         stopUpdates: {
             subscribe: async function* (_, { stopId }) {
                 const queue = [];
+                const subscriptionId = `stop_${stopId}_${Date.now()}`;
+                const eventName = `${VEHICLE_UPDATE}_STOP_${stopId}`;
+                
+                // Check and cleanup if too many listeners exist
+                subscriptionCleanup.cleanupEventListeners(eventName);
+                
                 const handler = (payload) => {
                     queue.push(payload); // payload is now an array of arrivals
                 };
-                eventEmitter.on(`${VEHICLE_UPDATE}_STOP_${stopId}`, handler);
+                eventEmitter.on(eventName, handler);
+                
+                // Register with cleanup system
+                subscriptionCleanup.registerSubscription(subscriptionId, eventName, handler);
                 
                 if (latestArrivalData.has(stopId)) {
                     queue.push(latestArrivalData.get(stopId));
@@ -210,7 +297,8 @@ const resolvers = {
                     }
                 } finally {
                     //console.log(`Server: Subscription ended for stop ${stopId}`);
-                    eventEmitter.off(`${VEHICLE_UPDATE}_STOP_${stopId}`, handler);
+                    eventEmitter.off(eventName, handler);
+                    subscriptionCleanup.unregisterSubscription(subscriptionId);
                 }
             }
         }
@@ -399,6 +487,9 @@ async function handleData(vehicleJson, tripJson) {
 
 predictivePollingLoop();
 
+// Start the subscription cleanup system
+subscriptionCleanup.start();
+
 const PORT = process.env.PORT || 4000;
 httpServer.listen(PORT, () => {
     console.log(`Server ready at http://localhost:${PORT}/graphql`);
@@ -408,6 +499,9 @@ httpServer.listen(PORT, () => {
 process.on('SIGINT', async () => {
     console.log('\nShutting down...');
     isShuttingDown = true;
+
+    // Stop the cleanup system
+    subscriptionCleanup.stop();
 
     wsServer.close();
     httpServer.close(() => {
