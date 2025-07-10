@@ -1,97 +1,144 @@
-import React from "react";
+import React, { useState, useEffect, useRef } from "react";
 import AbstractMenu from './Menu';
 
 const HelpContent = () => {
+    const [showScrollIndicator, setShowScrollIndicator] = useState(false);
+    const [isAtBottom, setIsAtBottom] = useState(false);
+    const scrollContainerRef = useRef(null);
+
+    const handleScroll = () => {
+        const element = scrollContainerRef.current;
+        if (!element) return;
+
+        const { scrollTop, scrollHeight, clientHeight } = element;
+        const isAtBottomNow = scrollTop + clientHeight >= scrollHeight - 5; // 5px threshold
+        const hasMoreContent = scrollHeight > clientHeight;
+        
+        setIsAtBottom(isAtBottomNow);
+        setShowScrollIndicator(hasMoreContent && !isAtBottomNow);
+    };
+
+    useEffect(() => {
+        const element = scrollContainerRef.current;
+        if (element) {
+            // Check initial state
+            handleScroll();
+            
+            // Add scroll event listener
+            element.addEventListener('scroll', handleScroll);
+            
+            // Cleanup
+            return () => element.removeEventListener('scroll', handleScroll);
+        }
+    }, []);
+
     return (
-        <div className="max-h-[calc(100vh-16rem)] overflow-y-auto space-y-6 pr-4">
-            <div>
-                <h3 className="font-semibold text-lg mb-3">How to Use the Bus Tracker</h3>
-                <p className="text-sm text-gray-800 dark:text-gray-800 mb-4">
-                    Welcome! This interactive map helps you track buses, stop arrivals and departures in real-time.
-                </p>
-            </div>
-
-            <div className="space-y-4">
+        <div className="relative">
+            <div 
+                ref={scrollContainerRef}
+                className="max-h-[calc(100vh-16rem)] overflow-y-auto space-y-6 pr-4"
+            >
                 <div>
-                    <h4 className="font-medium text-base mb-2">Main Features</h4>
-                    <ul className="text-sm text-gray-700 dark:text-gray-700 space-y-2 ml-4">
-                        <li>• <strong>Interactive Map:</strong> View bus routes and stops on an interactive map</li>
-                        <li>• <strong>Route Selection:</strong> Choose which bus routes to display on the map</li>
-                        <li>• <strong>Real-time Updates:</strong> See live bus locations and route information</li>
-                        <li>• <strong>Stop Information:</strong> Click on stops to view detailed information</li>
-                    </ul>
+                    <h3 className="font-semibold text-lg mb-3">How to Use the Bus Tracker</h3>
+                    <p className="text-sm text-gray-800 dark:text-gray-800 mb-4">
+                        Welcome! This interactive map helps you track buses, stop arrivals and departures in real-time.
+                    </p>
                 </div>
 
-                <div>
-                    <h4 className="font-medium text-base mb-2">How to Navigate</h4>
-                    <ul className="text-sm text-gray-700 dark:text-gray-700 space-y-2 ml-4">
-                        <li>• <strong>Menu Button (☰):</strong> Open the main menu to select which routes to display</li>
-                        <li>• <strong>Map Interaction:</strong> Click and drag to pan, scroll to zoom in/out</li>
-                        <li>• <strong>Bus Markers:</strong> Click on bus icons to see current location and route info</li>
-                        <li>• <strong>Stop Markers:</strong> Click on stop icons to view stop details and schedules</li>
-                    </ul>
-                </div>
+                <div className="space-y-4">
+                    <div>
+                        <h4 className="font-medium text-base mb-2">Main Features</h4>
+                        <ul className="text-sm text-gray-700 dark:text-gray-700 space-y-2 ml-4">
+                            <li>• <strong>Interactive Map:</strong> View bus routes and stops on an interactive map</li>
+                            <li>• <strong>Route Selection:</strong> Choose which bus routes to display on the map</li>
+                            <li>• <strong>Real-time Updates:</strong> See live bus locations and route information</li>
+                            <li>• <strong>Stop Information:</strong> Click on stops to view detailed information</li>
+                        </ul>
+                    </div>
 
-                <div>
-                    <h4 className="font-medium text-base mb-2">Route Selection</h4>
-                    <ul className="text-sm text-gray-700 dark:text-gray-700 space-y-2 ml-4">
-                        <li>• Open the menu using the ☰ button in the top-left corner</li>
-                        <li>• Check/uncheck routes to show/hide them on the map</li>
-                        <li>• Selected routes will display with colored lines and bus markers</li>
-                        <li>• You can select multiple routes to compare different bus lines</li>
-                    </ul>
-                </div>
+                    <div>
+                        <h4 className="font-medium text-base mb-2">How to Navigate</h4>
+                        <ul className="text-sm text-gray-700 dark:text-gray-700 space-y-2 ml-4">
+                            <li>• <strong>Menu Button (☰):</strong> Open the main menu to select which routes to display</li>
+                            <li>• <strong>Map Interaction:</strong> Click and drag to pan, scroll to zoom in/out</li>
+                            <li>• <strong>Bus Markers:</strong> Click on bus icons to see current location and route info</li>
+                            <li>• <strong>Stop Markers:</strong> Click on stop icons to view stop details and schedules</li>
+                        </ul>
+                    </div>
 
-                <div>
-                    <h4 className="font-medium text-base mb-2">Time Display</h4>
-                    <ul className="text-sm text-gray-700 dark:text-gray-700 space-y-2 ml-4">
-                    <li>• The current time is displayed in the top-right corner</li>
-                    <li>• This helps you track when buses are expected to arrive</li>
-                    <li>• All times shown are in your local timezone</li>
-                    </ul>
-                </div>
+                    <div>
+                        <h4 className="font-medium text-base mb-2">Route Selection</h4>
+                        <ul className="text-sm text-gray-700 dark:text-gray-700 space-y-2 ml-4">
+                            <li>• Open the menu using the ☰ button in the top-left corner</li>
+                            <li>• Check/uncheck routes to show/hide them on the map</li>
+                            <li>• Selected routes will display with colored lines and bus markers</li>
+                            <li>• You can select multiple routes to compare different bus lines</li>
+                        </ul>
+                    </div>
 
-                <div>
-                    <h4 className="font-medium text-base mb-2">Connection Status</h4>
-                    <ul className="text-sm text-gray-700 dark:text-gray-700 space-y-2 ml-4">
-                        <li>• The app shows real-time connection status</li>
-                        <li>• Green indicator means connected and receiving live data</li>
-                        <li>• Red indicator means disconnected - check your internet connection</li>
-                    </ul>
-                </div>
+                    <div>
+                        <h4 className="font-medium text-base mb-2">Time Display</h4>
+                        <ul className="text-sm text-gray-700 dark:text-gray-700 space-y-2 ml-4">
+                        <li>• The current time is displayed in the top-right corner</li>
+                        <li>• This helps you track when buses are expected to arrive</li>
+                        <li>• All times shown are in your local timezone</li>
+                        </ul>
+                    </div>
 
-                <div className="bg-blue-50 dark:bg-blue-50 p-4 rounded-lg">
-                    <h4 className="font-medium text-base mb-2 text-gray-800 dark:text-gray-800">Tips</h4>
-                    <ul className="text-sm text-gray-700 dark:text-gray-700 space-y-1 ml-4">
-                        <li>• Use the zoom controls to get a better view of specific areas</li>
-                        <li>• Try selecting different route combinations to find the best route for your journey</li>
-                        <li>• The map automatically updates with new bus positions</li>
-                        <li>• You can reset the map view by refreshing the page</li>
-                    </ul>
-                </div>
-                
-                <div>
-                    <h4 className="font-medium text-lg mb-2">Contact & Info</h4>
-                    <div className="text-sm text-gray-700 dark:text-gray-700 space-y-2">
-                        <p className="mb-3">
-                            <strong> Hi! I'm Aiden. </strong><br/>
-                            If you're interested in working together or have any questions about this project, 
-                            feel free to reach out! <br />
-                        </p>
-                        <div className="bg-gray-50 dark:bg-gray-100 p-3 rounded-lg">
-                            <p className="font-medium mb-1">Email:</p>
-                            <p className="text-blue-600 dark:text-blue-700">aiden.paleczny@gmail.com</p>
+                    <div>
+                        <h4 className="font-medium text-base mb-2">Connection Status</h4>
+                        <ul className="text-sm text-gray-700 dark:text-gray-700 space-y-2 ml-4">
+                            <li>• The app shows real-time connection status</li>
+                            <li>• Green indicator means connected and receiving live data</li>
+                            <li>• Red indicator means disconnected - check your internet connection</li>
+                        </ul>
+                    </div>
+
+                    <div className="bg-blue-50 dark:bg-blue-50 p-4 rounded-lg">
+                        <h4 className="font-medium text-base mb-2 text-gray-800 dark:text-gray-800">Tips</h4>
+                        <ul className="text-sm text-gray-700 dark:text-gray-700 space-y-1 ml-4">
+                            <li>• Use the zoom controls to get a better view of specific areas</li>
+                            <li>• Try selecting different route combinations to find the best route for your journey</li>
+                            <li>• The map automatically updates with new bus positions</li>
+                            <li>• You can reset the map view by refreshing the page</li>
+                        </ul>
+                    </div>
+                    
+                    <div>
+                        <h4 className="font-medium text-lg mb-2">Contact & Info</h4>
+                        <div className="text-sm text-gray-700 dark:text-gray-700 space-y-2">
+                            <p className="mb-3">
+                                <strong> Hi! I'm Aiden. </strong><br/>
+                                If you're interested in working together or have any questions about this project, 
+                                feel free to reach out! <br />
+                            </p>
+                            <div className="bg-gray-50 dark:bg-gray-100 p-3 rounded-lg">
+                                <p className="font-medium mb-1">Email:</p>
+                                <p className="text-blue-600 dark:text-blue-700">aiden.paleczny@gmail.com</p>
+                            </div>
+                            <p>
+                                <strong>Some notes on the project: </strong><br/>
+                                Although this is a intended as a software engineering portfolio project, 
+                                it still provides accurate and up to date info from London Transit. <br/>
+                                <strong>Tech Stack: </strong> <br/>
+                                React + Vite, Tailwind, GraphQL, NodeJS + Express
+                            </p>
                         </div>
-                        <p>
-                            <strong>Some notes on the project: </strong><br/>
-                            Although this is a intended as a software engineering portfolio project, 
-                            it still provides accurate and up to date info from London Transit. <br/>
-                            <strong>Tech Stack: </strong> <br/>
-                            React + Vite, Tailwind, GraphQL, NodeJS + Express
-                        </p>
                     </div>
                 </div>
             </div>
+            
+            {/* Scroll Indicator */}
+            {showScrollIndicator && (
+                <div className="absolute bottom-0 left-0 right-0 h-8 pointer-events-none flex items-center justify-center">
+                    <div className="flex items-center space-x-1 text-gray-900 dark:text-gray-900 text-xs rounded-2xl p-3 bg-gray-50/75">
+                        <svg className="w-4 h-4 animate-bounce" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 10.293a1 1 0 010 1.414l-6 6a1 1 0 01-1.414 0l-6-6a1 1 0 111.414-1.414L9 14.586V3a1 1 0 012 0v11.586l4.293-4.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                        
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

@@ -10,7 +10,7 @@ const httpLink = new HttpLink({
 });
 
 const wsClient = createClient({
-    url: import.meta.env.VITE_BACKEND_WS_URL || 'ws://192.168.0.233:4000/graphql',
+    url: import.meta.env.VITE_BACKEND_WS_URL || 'ws://localhost:4000/graphql',
     retryAttempts: 5,
     lazy: false, // This should make it connect immediately
     on: {
