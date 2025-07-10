@@ -104,16 +104,16 @@ export const reconnectWebSocketHelper = async () => {
 
 export const reconnectWebSocket = async () => {
     // Only try if the socket has never connected
-    if (!connectionStatus.get().hasConnected || subscriptionManager.getSubscriptionCount() == 0) {
+    //if (!connectionStatus.get().hasConnected || subscriptionManager.getSubscriptionCount() == 0) {
         const success = await reconnectWebSocketHelper();
         if (success) {
             console.log('WebSocket connection restored successfully.');
         } else {
             console.log('WebSocket reconnection failed or incomplete.');
         }
-    } else {
+    //} else {
         console.log('Already connected')
-    }
+    //}
 }
 
 // Inject the function into connection status so it can call reconnect

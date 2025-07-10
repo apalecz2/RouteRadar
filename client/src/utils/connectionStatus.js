@@ -29,6 +29,30 @@ const startWatchingConnection = () => {
 };
 
 
+let watchReconnInterval = null;
+
+const startWatchingReConnection = () => {
+    
+    if (watchReconnInterval) return; // Already running
+
+    console.log('[ConnectionStatus] Starting watch...');
+
+    watchReconnInterval = setInterval(() => {
+        const { connected, hasConnected } = state;
+        if (!connected && hasConnected) {
+            console.log('[ConnectionStatus] Still disconnected. Running watch action...');
+
+            if (reconnectFn) reconnectFn();
+
+        } else {
+            clearInterval(watchReconnInterval);
+            watchReconnInterval = null;
+        }
+    }, 5000);
+    
+}
+
+
 export const connectionStatus = {
     get: () => state,
 
@@ -51,6 +75,9 @@ export const connectionStatus = {
             !state.hasConnected
         ) {
             startWatchingConnection();
+        }
+        else if (!state.connected && state.hasConnected) {
+            startWatchingReConnection();
         }
 
     },
