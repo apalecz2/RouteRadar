@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: buswebapp-frontend
+    env: static
+    buildCommand: cd client && npm install && npm run build
+    staticPublishPath: ./client/dist
+    envVars:
+      - key: VITE_BACKEND_URL
+        value: https://buswebappserver.onrender.com/graphql
+      - key: VITE_BACKEND_WS_URL
+        value: wss://buswebappserver.onrender.com/graphql 
