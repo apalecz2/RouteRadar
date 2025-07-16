@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useData } from '../Providers/DataProvider';
+import { getRouteColor } from '../../utils/getRouteColor';
 
 const Routes = ({ map, routeIds, routeClicked, selectedRouteId }) => {
     const polylinesRef = useRef([]);
@@ -91,12 +92,5 @@ const Routes = ({ map, routeIds, routeClicked, selectedRouteId }) => {
 
     return null;
 };
-
-function getRouteColor(index, totalRoutes) {
-    const hue = (index * 360 / totalRoutes) % 360;
-    const saturation = 70;
-    const lightness = 50;
-    return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
-}
 
 export default Routes;

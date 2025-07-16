@@ -9,6 +9,8 @@ import StopMarkers from './MarkersLines/StopMarkers';
 import BusMarkers from './MarkersLines/BusMarkers';
 import Routes from './MarkersLines/Routes';
 import PopupManager from './Popups/PopupManager';
+import { getRouteColor, getRouteHighlightColor } from '../utils/getRouteColor';
+import { useData } from './Providers/DataProvider';
 
 const SelectionsManager = ({ map, routeIds }) => {
 
@@ -27,6 +29,8 @@ const SelectionsManager = ({ map, routeIds }) => {
     // Store references to markers for updating selection data
     const markersRef = useRef({});
 
+    const { routes } = useData();
+
 
     // Handles a marker clicked, obj: the content, type: string - stop, bus, route..., marker: reference to actual map marker
     const handleMarkerClicked = useCallback((obj, type, marker) => {
@@ -43,21 +47,21 @@ const SelectionsManager = ({ map, routeIds }) => {
         } else {
             // Same marker clicked - only update if data actually changed
             //console.log(`Same marker clicked: ${type} ${id}`);
-            
+
             // For buses, compare relevant fields that might change
             if (type === 'bus') {
                 const currentData = selectionRef.current.data;
                 const newData = obj;
-                
+
                 // Check if any relevant bus data has changed
-                const hasChanged = 
+                const hasChanged =
                     currentData.Bearing !== newData.Bearing ||
                     currentData.Latitude !== newData.Latitude ||
                     currentData.Longitude !== newData.Longitude ||
                     currentData.Speed !== newData.Speed ||
                     currentData.RouteId !== newData.RouteId ||
                     currentData.TripId !== newData.TripId;
-                
+
                 if (hasChanged) {
                     //console.log(`Bus data changed, updating selection`);
                     setSelection(prev => ({ ...prev, data: obj }));
@@ -71,11 +75,11 @@ const SelectionsManager = ({ map, routeIds }) => {
                 // Only update if there are actual changes to stop data (very rare)
                 const currentData = selectionRef.current.data;
                 const newData = obj;
-                
-                const hasChanged = 
+
+                const hasChanged =
                     currentData.name !== newData.name ||
                     currentData.routes?.join(',') !== newData.routes?.join(',');
-                
+
                 if (hasChanged) {
                     //console.log(`Stop data changed, updating selection`);
                     setSelection(prev => ({ ...prev, data: obj }));
@@ -87,12 +91,12 @@ const SelectionsManager = ({ map, routeIds }) => {
                 // Only update if there are actual changes to route data
                 const currentData = selectionRef.current.data;
                 const newData = obj;
-                
-                const hasChanged = 
+
+                const hasChanged =
                     currentData.name !== newData.name ||
                     currentData.description !== newData.description ||
                     currentData.segments?.length !== newData.segments?.length;
-                
+
                 if (hasChanged) {
                     //console.log(`Route data changed, updating selection`);
                     setSelection(prev => ({ ...prev, data: obj }));
@@ -123,55 +127,61 @@ const SelectionsManager = ({ map, routeIds }) => {
             // Reset previous highlight
             if (highlightedMarkerRef.current) {
                 const prev = highlightedMarkerRef.current;
-                const pinCreator = pinCreatorsRef.current[prev.type];
-                if (pinCreator) {
+                if (prev.marker && prev.marker._updatePin) {
                     if (prev.type === 'bus') {
                         const rotation = prev.data.Bearing || 0;
-                        prev.marker.content = pinCreator('gray', rotation, false);
-                    } else {
-                        prev.marker.content = pinCreator();
+                        let color = 'white';
+                        if (routes && routes.length > 0 && prev.data.RouteId) {
+                            const routeIndex = routes.findIndex(r => String(r.id) === String(prev.data.RouteId));
+                            if (routeIndex !== -1) {
+                                color = getRouteColor(routeIndex, routes.length);
+                            }
+                        }
+                        prev.marker._updatePin(color, rotation, false);
                     }
+                    // For other types, fallback to previous logic if needed
                 }
             }
 
             // Highlight new marker
-            const pinCreator = pinCreatorsRef.current[selection.type];
-            if (pinCreator && selection.marker) {
+            if (selection.marker && selection.marker._updatePin) {
                 if (selection.type === 'bus') {
                     const rotation = selection.data.Bearing || 0;
-                    selection.marker.content = pinCreator('#ff0000', rotation, true);
-                } else if (selection.type === 'route') {
-                    // For routes, we might want to highlight the polyline differently
-                    // For now, we'll just store the selection without visual changes
-                    highlightedMarkerRef.current = selection;
-                } else {
-                    selection.marker.content = pinCreator('#ff0000', true);
+                    let color = 'white';
+                    let highlightColor = '#ff0000';
+                    if (routes && routes.length > 0 && selection.data.RouteId) {
+                        const routeIndex = routes.findIndex(r => String(r.id) === String(selection.data.RouteId));
+                        if (routeIndex !== -1) {
+                            color = getRouteColor(routeIndex, routes.length);
+                            highlightColor = getRouteHighlightColor(routeIndex, routes.length);
+                        }
+                    }
+                    selection.marker._updatePin(highlightColor, rotation, true);
                 }
+                // For other types, fallback to previous logic if needed
                 if (selection.type !== 'route') {
                     highlightedMarkerRef.current = selection;
                 }
             }
-
-            //console.log('Selection updated:', selection);
         } else {
             // Clear previous highlight when selection is cleared
             if (highlightedMarkerRef.current) {
                 const prev = highlightedMarkerRef.current;
-                const pinCreator = pinCreatorsRef.current[prev.type];
-                if (pinCreator && prev.type !== 'route') {
-                    if (prev.type === 'bus') {
-                        const rotation = prev.data.Bearing || 0;
-                        prev.marker.content = pinCreator('gray', rotation, false);
-                    } else {
-                        prev.marker.content = pinCreator();
+                if (prev.marker && prev.marker._updatePin && prev.type === 'bus') {
+                    const rotation = prev.data.Bearing || 0;
+                    let color = 'white';
+                    if (routes && routes.length > 0 && prev.data.RouteId) {
+                        const routeIndex = routes.findIndex(r => String(r.id) === String(prev.data.RouteId));
+                        if (routeIndex !== -1) {
+                            color = getRouteColor(routeIndex, routes.length);
+                        }
                     }
+                    prev.marker._updatePin(color, rotation, false);
                 }
                 highlightedMarkerRef.current = null;
             }
-
-            //console.log('Selection cleared');
         }
-    }, [selection]);
+    }, [selection, routes]);
 
     // If this component exists, the map is guaranteed to exist, no need for validation here
     return (

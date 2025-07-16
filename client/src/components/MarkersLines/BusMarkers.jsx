@@ -4,44 +4,51 @@
 
 import { useEffect, useRef } from 'react';
 import { useApolloClient } from '@apollo/client';
+import { createRoot } from 'react-dom/client';
 import subscriptionManager from '../../utils/subscriptionManager';
+import { BusPin } from '../Pins/BusPin';
+import { getRouteColor } from '../../utils/getRouteColor';
+import { useData } from '../Providers/DataProvider';
 
 
 // Export to allow calls from parent to set and reset highlight when it's selected or deselected
-export function createBusPin(color = 'gray', rotation = 0, withPing = false) {
-    const wrapper = document.createElement('div');
-    wrapper.style.position = 'relative';
-    wrapper.style.width = '24px';
-    wrapper.style.height = '24px';
-    wrapper.style.transform = 'translateY(50%)';
+// (Moved to BusPin.jsx)
 
-    if (withPing) {
-        const ping = document.createElement('div');
-        ping.className = 'bus-ping';
-        wrapper.appendChild(ping);
+// Wrapper function to create a DOM element from the React BusPin component
+function createBusPinWrapper(initialColor = 'white', initialRotation = 0, initialPing = false) {
+    const wrapper = document.createElement('div');
+    const root = createRoot(wrapper);
+
+    // Mutable props ref
+    let props = {
+        color: initialColor,
+        rotation: initialRotation,
+        withPing: initialPing
+    };
+
+    // A tiny wrapper component to rerender on prop update
+    function PinWrapper() {
+        return <BusPin {...props} />;
     }
 
-    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-    svg.setAttribute("height", "24px");
-    svg.setAttribute("viewBox", "0 -960 960 960");
-    svg.setAttribute("width", "24px");
-    svg.setAttribute("fill", color);
-    svg.style.transform = `rotate(${rotation}deg)`; // <-- Preserve rotation
-    svg.style.transition = 'transform 0.3s ease';
+    root.render(<PinWrapper />);
 
-    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-    path.setAttribute("d", "m480-226.13-260.63 111.2q-14.67 5.71-27.85 2.73-13.17-2.97-22.37-12.17-9.19-9.19-12.05-22.75-2.86-13.55 3.1-28.23l277.78-625.76q5.72-13.67 17.65-20.51 11.94-6.84 24.37-6.84 12.43 0 24.37 6.84 11.93 6.84 17.65 20.51L799.8-175.35q5.96 14.68 3.1 28.23-2.86 13.56-12.05 22.75-9.2 9.2-22.37 12.17-13.18 2.98-27.85-2.73L480-226.13Z");
-    svg.appendChild(path);
-
-    wrapper.appendChild(svg);
-
-    return wrapper;
+    return {
+        element: wrapper,
+        update: (color, rotation, withPing) => {
+            props.color = color;
+            props.rotation = rotation;
+            props.withPing = withPing;
+            root.render(<PinWrapper />);
+        }
+    };
 }
 
 
 const BusMarkers = ({ routeIds, map, busClicked, registerPinCreator, updateSelectionData }) => {
 
     const client = useApolloClient();
+    const { routes } = useData();
 
     const markersRef = useRef({});
     const routeToVehicleMap = useRef({});
@@ -49,7 +56,15 @@ const BusMarkers = ({ routeIds, map, busClicked, registerPinCreator, updateSelec
 
     // Tell the parent where to call to make pin
     useEffect(() => {
-        registerPinCreator?.('bus', createBusPin);
+        registerPinCreator?.('bus', (color, rotation, withPing) => {
+            const { element, update } = createBusPinWrapper(color, rotation, withPing);
+            // Expose update method through element so parent can use it
+            element._updatePin = update;
+            element._color = color;
+            element._rotation = rotation;
+            element._withPing = withPing;
+            return element;
+        });
     }, [registerPinCreator]);
 
     useEffect(() => {
@@ -97,7 +112,14 @@ const BusMarkers = ({ routeIds, map, busClicked, registerPinCreator, updateSelec
                     const id = vehicle.VehicleId;
                     const pos = { lat: vehicle.Latitude, lng: vehicle.Longitude };
                     const rotation = vehicle.Bearing || 0;
-                    const color = 'gray';
+                    // Determine color from getRouteColor
+                    let color = 'white';
+                    if (routes && routes.length > 0 && vehicle.RouteId) {
+                        const routeIndex = routes.findIndex(r => String(r.id) === String(vehicle.RouteId));
+                        if (routeIndex !== -1) {
+                            color = getRouteColor(routeIndex, routes.length);
+                        }
+                    }
 
                     routeToVehicleMap.current[routeId].add(id);
 
@@ -107,25 +129,44 @@ const BusMarkers = ({ routeIds, map, busClicked, registerPinCreator, updateSelec
                         existingMarker.position = pos;
                         existingMarker.vehicleData = vehicle;
 
-                        // Update bearing/rotation
-                        const svgElement = existingMarker.content.querySelector('svg');
-                        if (svgElement) {
-                            svgElement.style.transform = `rotate(${rotation}deg)`;
+                        // Always re-render the BusPin with the new rotation and color
+                        const needsUpdate =
+                            existingMarker._rotation !== rotation ||
+                            existingMarker._color !== color ||
+                            existingMarker._withPing !== false;
+
+                        if (needsUpdate && existingMarker._updatePin) {
+                            existingMarker._updatePin(color, rotation, false);
+                            existingMarker._rotation = rotation;
+                            existingMarker._color = color;
+                            existingMarker._withPing = false;
+                            if (existingMarker.content) {
+                                existingMarker.content.__pinColor = color;
+                                existingMarker.content.__pinRotation = rotation;
+                                existingMarker.content.__pinPing = false;
+                            }
                         }
 
                         // Update selection data if this bus is currently selected
                         updateSelectionData?.(id, vehicle);
                     } else {
                         // Create new marker
-                        const content = createBusPin(color, rotation, false);
+                        const { element, update } = createBusPinWrapper(color, rotation, false);
                         const marker = new AdvancedMarkerElement({
                             position: pos,
                             map,
                             title: vehicle.Destination,
-                            content,
+                            content: element,
                         });
-
                         marker.vehicleData = vehicle;
+                        marker._updatePin = update;
+                        marker._rotation = rotation;
+                        marker._color = color;
+                        marker._withPing = false;
+                        // Set custom properties for highlight logic
+                        element.__pinColor = color;
+                        element.__pinRotation = rotation;
+                        element.__pinPing = false;
 
                         marker.addListener('click', () => {
                             busClicked(marker.vehicleData, 'bus', marker);
