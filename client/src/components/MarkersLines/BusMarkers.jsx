@@ -157,7 +157,9 @@ const BusMarkers = ({ routeIds, map, busClicked, registerPinCreator, updateSelec
                             map,
                             //title: vehicle.Destination,
                             content: element,
+                            zIndex: 20, // Bus markers base zIndex
                         });
+                        marker._baseZIndex = 20;
                         marker.vehicleData = vehicle;
                         marker._updatePin = update;
                         marker._rotation = rotation;

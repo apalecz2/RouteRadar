@@ -32,11 +32,26 @@ export function createStopPin(colour = '#ffffff', withPing = false) {
     wrapper.style.position = 'relative';
     wrapper.style.width = '12px';
     wrapper.style.height = '12px';
+    wrapper.style.transform = 'translateY(50%)';
 
-    if (withPing) {
+    // Helper to clear ping if it exists
+    function clearPing() {
+        const existingPing = wrapper.querySelector('.bus-ping');
+        if (existingPing) wrapper.removeChild(existingPing);
+    }
+
+    // Helper to add ping
+    function addPing(color) {
+        clearPing();
         const ping = document.createElement('div');
-        ping.className = 'stop-ping'; // From in index.css
+        ping.className = 'bus-ping';
+        ping.style.background = color;
         wrapper.appendChild(ping);
+    }
+
+    // Initial ping
+    if (withPing) {
+        addPing(colour);
     }
 
     const pin = document.createElement('div');
@@ -51,7 +66,19 @@ export function createStopPin(colour = '#ffffff', withPing = false) {
     pin.style.left = '0';
 
     wrapper.appendChild(pin);
-    wrapper.style.transform = 'translateY(50%)';
+
+    // Attach update method for highlight/ping
+    wrapper._updatePin = (color, _rotation, pingActive) => {
+        pin.style.backgroundColor = color;
+        if (pingActive) {
+            addPing(color);
+        } else {
+            clearPing();
+        }
+    };
+    wrapper._color = colour;
+    wrapper._withPing = withPing;
+
     return wrapper;
 }
 
@@ -101,7 +128,10 @@ const StopMarkers = ({ map, routeIds, stopClicked, registerPinCreator }) => {
                     map,
                     title: stop.name,
                     content: createStopPin(),
+                    zIndex: 10, // Stop markers base zIndex
                 });
+                marker._baseZIndex = 10;
+                marker.setZIndex = function(z) { this.zIndex = z; this.element && (this.element.style.zIndex = z); this.zIndex = z; };
 
                 marker.addListener('click', () => {
                     // Pass to parent

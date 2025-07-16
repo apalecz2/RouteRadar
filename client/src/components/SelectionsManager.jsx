@@ -127,8 +127,8 @@ const SelectionsManager = ({ map, routeIds }) => {
             // Reset previous highlight
             if (highlightedMarkerRef.current) {
                 const prev = highlightedMarkerRef.current;
-                if (prev.marker && prev.marker._updatePin) {
-                    if (prev.type === 'bus') {
+                if (prev.marker) {
+                    if (prev.type === 'bus' && prev.marker._updatePin) {
                         const rotation = prev.data.Bearing || 0;
                         let color = 'white';
                         if (routes && routes.length > 0 && prev.data.RouteId) {
@@ -138,14 +138,20 @@ const SelectionsManager = ({ map, routeIds }) => {
                             }
                         }
                         prev.marker._updatePin(color, rotation, false);
+                    } else if (prev.type === 'stop' && prev.marker.content && prev.marker.content._updatePin) {
+                        // Restore stop color and remove ping
+                        prev.marker.content._updatePin('#ffffff', 0, false);
                     }
-                    // For other types, fallback to previous logic if needed
+                    // Restore zIndex for previous marker
+                    if (typeof prev.marker.setZIndex === 'function' && prev.marker._baseZIndex !== undefined) {
+                        prev.marker.setZIndex(prev.marker._baseZIndex);
+                    }
                 }
             }
 
             // Highlight new marker
-            if (selection.marker && selection.marker._updatePin) {
-                if (selection.type === 'bus') {
+            if (selection.marker) {
+                if (selection.type === 'bus' && selection.marker._updatePin) {
                     const rotation = selection.data.Bearing || 0;
                     let color = 'white';
                     let highlightColor = '#ff0000';
@@ -157,6 +163,16 @@ const SelectionsManager = ({ map, routeIds }) => {
                         }
                     }
                     selection.marker._updatePin(highlightColor, rotation, true);
+                } else if (selection.type === 'stop' && selection.marker.content && selection.marker.content._updatePin) {
+                    // Highlight stop and show ping
+                    selection.marker.content._updatePin('#2ecc40', 0, true);
+                    if (typeof selection.marker.setZIndex === 'function') {
+                        selection.marker.setZIndex(1000);
+                    }
+                }
+                // Set zIndex for selected marker
+                if (typeof selection.marker.setZIndex === 'function') {
+                    selection.marker.setZIndex(1000);
                 }
                 // For other types, fallback to previous logic if needed
                 if (selection.type !== 'route') {
@@ -177,6 +193,15 @@ const SelectionsManager = ({ map, routeIds }) => {
                         }
                     }
                     prev.marker._updatePin(color, rotation, false);
+                } else if (prev.marker && prev.marker.content && prev.marker.content._updatePin && prev.type === 'stop') {
+                    prev.marker.content._updatePin('#ffffff', 0, false);
+                    if (typeof prev.marker.setZIndex === 'function' && prev.marker._baseZIndex !== undefined) {
+                        prev.marker.setZIndex(prev.marker._baseZIndex);
+                    }
+                }
+                // Restore zIndex for previous marker
+                if (prev.marker && typeof prev.marker.setZIndex === 'function' && prev.marker._baseZIndex !== undefined) {
+                    prev.marker.setZIndex(prev.marker._baseZIndex);
                 }
                 highlightedMarkerRef.current = null;
             }
