@@ -11,6 +11,8 @@ const VEHICLE_SUBSCRIPTION = gql`
             VehicleId
             Bearing
             timestamp
+            occupancy_status
+            occupancy_percentage
         }
     }
 `;

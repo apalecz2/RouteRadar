@@ -207,6 +207,8 @@ const typeDefs = `
         VehicleId: String
         Bearing: Float
         timestamp: Int!
+        occupancy_status: Int
+        occupancy_percentage: Int
     }
     
     type StopArrival {
@@ -411,17 +413,48 @@ async function handleData(vehicleJson, tripJson) {
     latestVehicleData.clear();
     latestArrivalData.clear();
 
+    // Build a lookup map for trip updates by trip_id
+    const tripUpdateMap = new Map();
+    for (const entity of tripJson.entity) {
+        if (entity.trip_update?.trip?.trip_id) {
+            tripUpdateMap.set(entity.trip_update.trip.trip_id, entity.trip_update);
+        }
+    }
+
     for (const entity of vehicleJson.entity) {
         const v = entity.vehicle;
         if (!v?.trip?.route_id || !v?.position?.latitude || !v?.position?.longitude) continue;
+
+        // Find the next stop_id for this vehicle
+        let nextStopId = null;
+        const tripId = v.trip.trip_id;
+        const currentSeq = v.current_stop_sequence;
+        const tripUpdate = tripUpdateMap.get(tripId);
+        if (tripUpdate && Array.isArray(tripUpdate.stop_time_update)) {
+            // Find the stop_time_update with stop_sequence just after current_stop_sequence
+            let minDiff = Infinity;
+            for (const stu of tripUpdate.stop_time_update) {
+                if (typeof stu.stop_sequence !== 'number') continue;
+                const diff = stu.stop_sequence - currentSeq;
+                if (diff > 0 && diff < minDiff) {
+                    minDiff = diff;
+                    nextStopId = stu.stop_id;
+                }
+            }
+        }
+        // Fallback: if not found, use na as marker
+        if (!nextStopId) nextStopId = "na";
+
         const payload = {
             RouteId: v.trip.route_id,
             Latitude: v.position.latitude,
             Longitude: v.position.longitude,
-            Destination: v.trip.trip_id,
+            Destination: nextStopId,
             VehicleId: v.vehicle.id,
             Bearing: v.position.bearing,
             timestamp: vehicleJson.header?.timestamp ?? 0, // fall back to 0 if dne
+            occupancy_status: v.occupancy_status ?? null,
+            occupancy_percentage: v.occupancy_percentage ?? null,
         };
 
         if (!latestVehicleData.has(payload.RouteId)) {
