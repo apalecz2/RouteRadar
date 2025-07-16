@@ -114,6 +114,7 @@ import { makeExecutableSchema } from '@graphql-tools/schema';
 import fetch from 'node-fetch';
 import cors from 'cors';
 import { EventEmitter } from 'events';
+import { AbortController } from 'abort-controller';
 
 let isShuttingDown = false;
 
@@ -130,26 +131,26 @@ eventEmitter.setMaxListeners(100);
 const subscriptionCleanup = {
     activeSubscriptions: new Map(), // track active subscriptions
     cleanupInterval: null,
-    
+
     // Register a subscription for cleanup tracking
-    registerSubscription: function(subscriptionId, eventName, handler) {
+    registerSubscription: function (subscriptionId, eventName, handler) {
         this.activeSubscriptions.set(subscriptionId, {
             eventName,
             handler,
             timestamp: Date.now()
         });
     },
-    
+
     // Unregister a subscription from cleanup tracking
-    unregisterSubscription: function(subscriptionId) {
+    unregisterSubscription: function (subscriptionId) {
         this.activeSubscriptions.delete(subscriptionId);
     },
-    
+
     // Force cleanup of orphaned listeners
-    cleanupOrphanedListeners: function() {
+    cleanupOrphanedListeners: function () {
         const now = Date.now();
         const maxAge = 5 * 60 * 1000; // 5 minutes
-        
+
         for (const [subscriptionId, subscription] of this.activeSubscriptions.entries()) {
             if (now - subscription.timestamp > maxAge) {
                 console.log(`Cleaning up stale subscription: ${subscriptionId}`);
@@ -157,7 +158,7 @@ const subscriptionCleanup = {
                 this.activeSubscriptions.delete(subscriptionId);
             }
         }
-        
+
         // Log current listener counts for debugging
         const eventNames = eventEmitter.eventNames();
         eventNames.forEach(eventName => {
@@ -167,9 +168,9 @@ const subscriptionCleanup = {
             }
         });
     },
-    
+
     // Immediate cleanup for specific event
-    cleanupEventListeners: function(eventName) {
+    cleanupEventListeners: function (eventName) {
         const count = eventEmitter.listenerCount(eventName);
         if (count > 10) {
             console.log(`Cleaning up ${count} listeners for ${eventName}`);
@@ -177,16 +178,16 @@ const subscriptionCleanup = {
             eventEmitter.removeAllListeners(eventName);
         }
     },
-    
+
     // Start the cleanup system
-    start: function() {
+    start: function () {
         this.cleanupInterval = setInterval(() => {
             this.cleanupOrphanedListeners();
         }, 30000); // Run every 30 seconds
     },
-    
+
     // Stop the cleanup system
-    stop: function() {
+    stop: function () {
         if (this.cleanupInterval) {
             clearInterval(this.cleanupInterval);
             this.cleanupInterval = null;
@@ -195,7 +196,7 @@ const subscriptionCleanup = {
 };
 
 const latestVehicleData = new Map(); // Key: routeId, Value: Array of vehicle objects
-const latestArrivalData = new Map(); 
+const latestArrivalData = new Map();
 
 const typeDefs = `
     type Vehicle {
@@ -240,7 +241,7 @@ const resolvers = {
 
                 const handler = (payload) => queue.push(payload);
                 eventEmitter.on(eventName, handler);
-                
+
                 // Register with cleanup system
                 subscriptionCleanup.registerSubscription(subscriptionId, eventName, handler);
 
@@ -271,18 +272,18 @@ const resolvers = {
                 const queue = [];
                 const subscriptionId = `stop_${stopId}_${Date.now()}`;
                 const eventName = `${VEHICLE_UPDATE}_STOP_${stopId}`;
-                
+
                 // Check and cleanup if too many listeners exist
                 subscriptionCleanup.cleanupEventListeners(eventName);
-                
+
                 const handler = (payload) => {
                     queue.push(payload); // payload is now an array of arrivals
                 };
                 eventEmitter.on(eventName, handler);
-                
+
                 // Register with cleanup system
                 subscriptionCleanup.registerSubscription(subscriptionId, eventName, handler);
-                
+
                 if (latestArrivalData.has(stopId)) {
                     queue.push(latestArrivalData.get(stopId));
                 }
@@ -322,6 +323,23 @@ const wsServer = new WebSocketServer({
 useServer({ schema }, wsServer);
 
 
+let lastSuccessfulUpdateTime = Date.now();
+
+async function safeFetch(url, timeout = 5000) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeout);
+
+    try {
+        const res = await fetch(url, { signal: controller.signal });
+        clearTimeout(timer);
+        return res;
+    } catch (err) {
+        clearTimeout(timer);
+        throw err;
+    }
+}
+
+
 
 const UPDATE_PERIOD_SEC = 30;
 let lastVehicleTimestamp = null;
@@ -346,8 +364,8 @@ async function predictivePollingLoop() {
         for (let attempt = 0; attempt < 3; attempt++) {
             try {
                 const [vehicleRes, tripRes] = await Promise.all([
-                    fetch(VEHICLE_URL),
-                    fetch(TRIP_UPDATE_URL),
+                    safeFetch(VEHICLE_URL, 7000),
+                    safeFetch(TRIP_UPDATE_URL, 7000),
                 ]);
 
                 const [vehicleJson, tripJson] = await Promise.all([
@@ -355,8 +373,8 @@ async function predictivePollingLoop() {
                     tripRes.json(),
                 ]);
 
-                const vehicleTimestamp = vehicleJson.header?.timestamp;
-                const tripTimestamp = tripJson.header?.timestamp;
+                const vehicleTimestamp = Number(vehicleJson.header?.timestamp ?? 0);
+                const tripTimestamp = Number(tripJson.header?.timestamp ?? 0);
                 const now = Math.floor(Date.now() / 1000);
 
                 console.log(`[${now}] Attempt ${attempt + 1}, Vehicle TS: ${vehicleTimestamp}, Trip TS: ${tripTimestamp}`);
@@ -364,10 +382,12 @@ async function predictivePollingLoop() {
                 const isNewVehicle = vehicleTimestamp && vehicleTimestamp !== lastVehicleTimestamp;
                 const isNewTrip = tripTimestamp && tripTimestamp !== lastTripTimestamp;
 
-                if (isNewVehicle && isNewTrip) {
+                const shouldUpdate = isNewVehicle || isNewTrip;
+                if (shouldUpdate) {
                     lastVehicleTimestamp = vehicleTimestamp;
                     lastTripTimestamp = tripTimestamp;
                     await handleData(vehicleJson, tripJson);
+                    lastSuccessfulUpdateTime = Date.now();
                     updated = true;
                     break;
                 }
@@ -410,18 +430,18 @@ async function handleData(vehicleJson, tripJson) {
         latestVehicleData.get(payload.RouteId).push(payload);
         eventEmitter.emit(`${VEHICLE_UPDATE}_${payload.RouteId}`, payload);
     }
-    
-    
+
+
     // Arrivals
-    
+
     const groupedArrivals = new Map(); // stopId -> routeId -> StopArrival[]
-    
-    
+
+
     const emittedArrivals = new Set();
-    
+
     // Parse trips
     for (const entity of tripJson.entity) {
-        
+
         // Validate entity structure
         const tripUpdate = entity.trip_update;
         if (!tripUpdate?.trip?.trip_id || !tripUpdate?.stop_time_update) continue;
@@ -448,7 +468,7 @@ async function handleData(vehicleJson, tripJson) {
                 delaySeconds: delay,
                 timestamp: tripJson.header?.timestamp ?? 0, // fall back to 0 if dne
             };
-            
+
             if (!groupedArrivals.has(stopId)) {
                 groupedArrivals.set(stopId, new Map());
             }
@@ -459,10 +479,10 @@ async function handleData(vehicleJson, tripJson) {
             }
 
             routesMap.get(routeId).push(stopArrivalPayload);
-            
+
         }
     }
-    
+
     for (const [stopId, routeMap] of groupedArrivals.entries()) {
         const arrivalsToEmit = [];
 
@@ -481,11 +501,23 @@ async function handleData(vehicleJson, tripJson) {
         // Emit batch once per stop
         eventEmitter.emit(`${VEHICLE_UPDATE}_STOP_${stopId}`, arrivalsToEmit);
     }
-    
-    
+
+
 }
 
 predictivePollingLoop();
+
+
+// Force a reset if the polling loop is stuck
+setInterval(() => {
+    if (Date.now() - lastSuccessfulUpdateTime > 60000) {
+        console.warn('Watchdog: No successful update in 60s, resetting timestamps');
+        lastVehicleTimestamp = null;
+        lastTripTimestamp = null;
+    }
+}, 30000);
+
+
 
 // Start the subscription cleanup system
 subscriptionCleanup.start();

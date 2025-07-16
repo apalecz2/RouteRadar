@@ -155,7 +155,7 @@ const BusMarkers = ({ routeIds, map, busClicked, registerPinCreator, updateSelec
                         const marker = new AdvancedMarkerElement({
                             position: pos,
                             map,
-                            title: vehicle.Destination,
+                            //title: vehicle.Destination,
                             content: element,
                         });
                         marker.vehicleData = vehicle;
