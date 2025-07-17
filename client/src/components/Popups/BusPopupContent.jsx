@@ -3,8 +3,8 @@ import { getCachedData } from '../../utils/dataCache';
 import { getRouteColor } from '../../utils/getRouteColor';
 
 const formatTimeAgo = (secondsAgo) => {
-    if (secondsAgo == 1) return `${secondsAgo} second ago`;
-    if (secondsAgo < 60) return `${secondsAgo} seconds ago`;
+    if (secondsAgo == 1) return `${secondsAgo}s ago`;
+    if (secondsAgo < 60) return `${secondsAgo}s ago`;
     if (secondsAgo < 120) return `1 minute ago`;
     if (secondsAgo < 3600) return `${Math.floor(secondsAgo / 60)} minute(s) ago`;
     if (secondsAgo < 86400) return `${Math.floor(secondsAgo / 3600)} hour(s) ago`;
@@ -27,7 +27,7 @@ const BusPopupContent = ({ bus }) => {
         let isMounted = true;
         async function fetchStopName() {
             if (!bus.Destination || bus.Destination === 'na') {
-                setStopName(bus.Destination);
+                setStopName("Next stop not found. Please try again later.");
                 return;
             }
             const { stops } = await getCachedData();

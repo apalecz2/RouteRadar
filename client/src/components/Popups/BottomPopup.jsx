@@ -103,7 +103,7 @@ const BottomPopup = ({ open, popupType, onClose, isClosing, triggerClose, childr
                 pointerEvents: open ? 'auto' : 'none',
             }}
         >
-            <div className="relative z-10 text-left">
+            <div className="relative z-10 text-left max-h-[40vh]">
                 <CloseButton onClick={triggerClose} />
                 {currentContent}
             </div>
