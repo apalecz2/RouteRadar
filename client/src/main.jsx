@@ -15,12 +15,12 @@ subscriptionManager.setClient(client)
 
 createRoot(document.getElementById('root')).render(
     <StrictMode>
-        {/*<ErrorBoundary>*/}
+        <ErrorBoundary>
             <ApolloProvider client={client}>
                 <DataProvider>
                     <App />
                 </DataProvider>
             </ApolloProvider>
-        {/*</ErrorBoundary>*/}
+        </ErrorBoundary>
     </StrictMode>,
 )
