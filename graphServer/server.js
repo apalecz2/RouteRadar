@@ -315,6 +315,11 @@ const app = express();
 app.use(cors());
 app.get('/', (_, res) => res.send('LTC GraphQL WebSocket server running'));
 
+// Keep alive endpoint to keep server running
+app.get('/keepalive', (_, res) => {
+    res.send('ok');
+});
+
 const httpServer = createServer(app);
 
 const wsServer = new WebSocketServer({
