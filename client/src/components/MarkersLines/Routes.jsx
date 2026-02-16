@@ -21,7 +21,8 @@ const Routes = ({ map, routeIds, routeClicked, selectedRouteId }) => {
         routeMainPolylinesRef.current = {};
 
         routes.forEach((route, idx) => {
-            if (routeIds.length > 0 && !routeIds.includes(route.id)) return;
+            if (routeIds.length === 0) return;
+            if (!routeIds.includes(route.id)) return;
 
             // Use highlight color if this route is selected
             const baseColor = getRouteColor(idx, 37);

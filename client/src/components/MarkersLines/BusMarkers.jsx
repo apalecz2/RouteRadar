@@ -76,7 +76,12 @@ const BusMarkers = ({ routeIds, map, busClicked, registerPinCreator, updateSelec
         const AdvancedMarkerElement = window.google.maps.marker?.AdvancedMarkerElement;
         if (!AdvancedMarkerElement) return;
 
-        const newRoutes = new Set(routeIds);
+        let activeRouteIds = routeIds;
+        if (routeIds.length === 0 && routes && routes.length > 0) {
+            activeRouteIds = routes.map(r => r.id);
+        }
+
+        const newRoutes = new Set(activeRouteIds.map(String));
         const currentRoutes = new Set(Object.keys(subscriptionIdsRef.current));
 
         const routesToRemove = [...currentRoutes].filter(r => !newRoutes.has(r));
@@ -201,7 +206,7 @@ const BusMarkers = ({ routeIds, map, busClicked, registerPinCreator, updateSelec
         };
 
 
-    }, [routeIds, map, busClicked, updateSelectionData]);
+    }, [routeIds, map, busClicked, updateSelectionData, routes]);
 
 
     return null;
