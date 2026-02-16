@@ -1,31 +1,16 @@
-import { useState } from 'react';
-
-import MapContainer from './components/MapContainer';
-import SelectMenu from './components/Menus/SelectMenu'
-import HelpMenu from './components/Menus/HelpMenu';
-import TimeDisplay from './components/TimeDisplay';
-import SelectionsManager from './components/SelectionsManager';
-import TransitDirections from './components/Directions/TransitDirections';
-import { MenuProvider } from './components/Menus/Menu';
-
-import ConnectionMonitor from './components/Menus/ConnectionMonitor';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import MainMap from './components/MainMap';
+import LandingPage from './components/LandingPage';
 
 function App() {
-    const [map, setMap] = useState(null);
-    const [routeIds, setRouteIds] = useState([]);
-
     return (
-        <MenuProvider>
-            <div className="relative w-full h-screen">
-                <MapContainer onMapLoad={setMap} />
-                {/*<TransitDirections map={map} />*/}
-                {map && <SelectionsManager map={map} routeIds={routeIds} />}
-                <TimeDisplay />
-                <SelectMenu routeIds={routeIds} setRouteIds={setRouteIds} />
-                <HelpMenu />
-                <ConnectionMonitor />
-            </div>
-        </MenuProvider>
+        <BrowserRouter>
+            <Routes>
+                <Route path="/" element={<LandingPage />} />
+                <Route path="/map" element={<MainMap />} />
+                <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+        </BrowserRouter>
     );
 }
 

@@ -45,7 +45,7 @@ const MenuButton = React.forwardRef(({ onClick, isOpen, disabled, children, clas
                 // Calculate top position based on order
                 if (order === 0) return `top-8 md:top-12 ${baseClasses}`;
                 if (order === 1) return `top-22 md:top-26 ${baseClasses}`;
-                if (order === 2) return `top-34 md:top-40 ${baseClasses}`;
+                if (order === 2) return `top-36 md:top-40 ${baseClasses}`;
                 if (order === 3) return `top-50 md:top-54 ${baseClasses}`;
                 if (order === 4) return `top-64 md:top-68 ${baseClasses}`;
                 // Default fallback
