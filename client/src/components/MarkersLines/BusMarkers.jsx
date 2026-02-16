@@ -122,7 +122,7 @@ const BusMarkers = ({ routeIds, map, busClicked, registerPinCreator, updateSelec
                     if (routes && routes.length > 0 && vehicle.RouteId) {
                         const routeIndex = routes.findIndex(r => String(r.id) === String(vehicle.RouteId));
                         if (routeIndex !== -1) {
-                            color = getRouteColor(routeIndex, routes.length);
+                            color = getRouteColor(routeIndex);
                         }
                     }
 

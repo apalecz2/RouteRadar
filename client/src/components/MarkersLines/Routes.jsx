@@ -25,7 +25,7 @@ const Routes = ({ map, routeIds, routeClicked, selectedRouteId }) => {
             if (!routeIds.includes(route.id)) return;
 
             // Use highlight color if this route is selected
-            const baseColor = getRouteColor(idx, 37);
+            const baseColor = getRouteColor(idx);
             const color = selectedRouteId === route.id ? '#dd0000' : baseColor;
             const strokeWeight = selectedRouteId === route.id ? 6 : 4;
             const strokeOpacity = selectedRouteId === route.id ? 1.0 : 0.7;

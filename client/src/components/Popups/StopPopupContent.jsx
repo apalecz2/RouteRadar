@@ -109,7 +109,7 @@ const StopPopupContent = ({ stop, arrivals = [] }) => {
 
     // For color bar, use first route in stop.routes if available
     let mainRoute = stop.routes && stop.routes.length > 0 ? stop.routes[0] : null;
-    let routeColor = mainRoute ? getRouteColor(0, 1) : '#2563eb'; // fallback blue
+    let routeColor = mainRoute ? getRouteColor(0) : '#2563eb'; // fallback blue
 
     // If you want to color by route index, you could fetch all routes and find index
 
@@ -156,7 +156,7 @@ const StopPopupContent = ({ stop, arrivals = [] }) => {
                         {Object.entries(grouped).map(([routeId, arrs], idx) => (
                             <div key={routeId} className="mb-2 md:mb-3">
                                 <div className="flex items-center gap-1 md:gap-2 mb-1">
-                                    <span className="w-2 h-2 rounded-full" style={{ background: getRouteColor(idx, Object.keys(grouped).length) }}></span>
+                                    <span className="w-2 h-2 rounded-full" style={{ background: getRouteColor(idx) }}></span>
                                     <span className="font-semibold text-xs md:text-sm">Route {routeId}</span>
                                 </div>
                                 <ul className="space-y-1">

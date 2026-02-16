@@ -57,7 +57,7 @@ const BusPopupContent = ({ bus }) => {
             if (!routes || !Array.isArray(routes)) return;
             // Find index of this route in the routes array (by id, ignoring zero padding)
             const idx = routes.findIndex(r => (r.route_id || r.id || '').replace(/^0+/, '') === routeDisplay);
-            const color = idx >= 0 ? getRouteColor(idx, routes.length) : '#2563eb';
+            const color = idx >= 0 ? getRouteColor(idx) : '#2563eb';
             if (isMounted) setRouteColor(color);
         }
         fetchColor();

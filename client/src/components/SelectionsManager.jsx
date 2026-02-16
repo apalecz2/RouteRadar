@@ -134,7 +134,7 @@ const SelectionsManager = ({ map, routeIds }) => {
                         if (routes && routes.length > 0 && prev.data.RouteId) {
                             const routeIndex = routes.findIndex(r => String(r.id) === String(prev.data.RouteId));
                             if (routeIndex !== -1) {
-                                color = getRouteColor(routeIndex, routes.length);
+                                color = getRouteColor(routeIndex);
                             }
                         }
                         prev.marker._updatePin(color, rotation, false);
@@ -158,8 +158,8 @@ const SelectionsManager = ({ map, routeIds }) => {
                     if (routes && routes.length > 0 && selection.data.RouteId) {
                         const routeIndex = routes.findIndex(r => String(r.id) === String(selection.data.RouteId));
                         if (routeIndex !== -1) {
-                            color = getRouteColor(routeIndex, routes.length);
-                            highlightColor = getRouteHighlightColor(routeIndex, routes.length);
+                            color = getRouteColor(routeIndex);
+                            highlightColor = getRouteHighlightColor(routeIndex);
                         }
                     }
                     selection.marker._updatePin(highlightColor, rotation, true);
@@ -189,7 +189,7 @@ const SelectionsManager = ({ map, routeIds }) => {
                     if (routes && routes.length > 0 && prev.data.RouteId) {
                         const routeIndex = routes.findIndex(r => String(r.id) === String(prev.data.RouteId));
                         if (routeIndex !== -1) {
-                            color = getRouteColor(routeIndex, routes.length);
+                            color = getRouteColor(routeIndex);
                         }
                     }
                     prev.marker._updatePin(color, rotation, false);
