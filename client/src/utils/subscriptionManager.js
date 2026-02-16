@@ -61,7 +61,8 @@ class SubscriptionManager {
         // If already subscribed, return existing subscription
         if (this.activeSubscriptions.has(subscriptionId)) {
             const existing = this.activeSubscriptions.get(subscriptionId);
-            existing.callbacks.push(callbacks);
+            const safeCallbacks = Array.isArray(callbacks) ? callbacks : [callbacks];
+            existing.callbacks.push(...safeCallbacks);
             return subscriptionId;
         }
 
@@ -101,7 +102,7 @@ class SubscriptionManager {
             type: 'vehicle',
             variables: { routeId },
             subscription,
-            callbacks: [callbacks]
+            callbacks: Array.isArray(callbacks) ? callbacks : [callbacks]
         });
 
         console.log(`Subscribed to vehicle updates for route ${routeId}. Total subscriptions: ${this.activeSubscriptions.size}`);
@@ -166,7 +167,7 @@ class SubscriptionManager {
             type: 'stop',
             variables: { stopId },
             subscription,
-            callbacks: [callbacks]
+            callbacks: Array.isArray(callbacks) ? callbacks : [callbacks]
         });
 
         console.log(`Subscribed to stop updates for stop ${stopId}. Total subscriptions: ${this.activeSubscriptions.size}`);
@@ -247,9 +248,10 @@ class SubscriptionManager {
         // Resubscribe to all
         subscriptionsToResubscribe.forEach(([id, sub]) => {
             if (sub.type === 'vehicle') {
-                this.subscribeToVehicle(sub.variables.routeId, ...sub.callbacks);
+                // Pass the array of callbacks
+                this.subscribeToVehicle(sub.variables.routeId, sub.callbacks);
             } else if (sub.type === 'stop') {
-                this.subscribeToStop(sub.variables.stopId, ...sub.callbacks);
+                this.subscribeToStop(sub.variables.stopId, sub.callbacks);
             }
         });
     }

@@ -46,36 +46,45 @@ export const reconnectWebSocketHelper = async () => {
     // Mark as disconnected to trigger reconnection logic
     connectionStatus.update({ connected: false, retryCount: connectionStatus.get().retryCount + 1 });
 
-    // Close the current connection
-    wsClient.dispose();
+    // Close the current connection but allow retry logic to reconnect
+    try {
+        // terminate() closes the socket immediately, but doesn't destroy the client like dispose()
+        wsClient.terminate(); 
+    } catch (e) {
+        console.warn('[WS] Error terminating connection:', e);
+    }
 
-    // Wait a moment for cleanup from dispose, just in case
+    // Wait a moment for cleanup
     await new Promise((res) => setTimeout(res, 100));
 
     return new Promise((resolve) => {
         let sawNext = false;
         let sawComplete = false;
 
-        const unsubscribe = wsClient.subscribe(
+        let unsubscribe;
+
+        // Check connection with a query
+        unsubscribe = wsClient.subscribe(
             { query: '{ __typename }' },
             {
                 next: () => {
                     console.log('[WS] Test subscription successful - connection working');
                     sawNext = true;
-                    unsubscribe(); // safe to call even if complete hasn't fired yet
+                    // Don't unsubscribe yet, let it complete naturally if it's a query
                 },
                 error: (error) => {
                     console.error('[WS] Test subscription error:', error);
-                    resolve(false); // immediate failure
+                    resolve(false); 
                 },
                 complete: () => {
                     console.log('[WS] Test subscription completed');
                     sawComplete = true;
 
-                    // If we saw both complete and next, the connection is valid
-                    if (sawNext && sawComplete) {
+                    // If saw next, connection is valid (even if complete came later)
+                    if (sawNext) {
                         resolve(true);
                     } else {
+                        // If only complete fired without next, something is weird for a query
                         resolve(false);
                     }
                 },
@@ -86,6 +95,7 @@ export const reconnectWebSocketHelper = async () => {
         setTimeout(() => {
             if (!sawNext || !sawComplete) {
                 console.warn('[WS] Test subscription timed out');
+                if (unsubscribe) unsubscribe();
                 resolve(false);
             }
         }, 5000); // 5 seconds max
