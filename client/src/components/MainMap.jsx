@@ -6,6 +6,7 @@ import TimeDisplay from './TimeDisplay';
 import SelectionsManager from './SelectionsManager';
 import { MenuProvider } from './Menus/Menu';
 import ConnectionMonitor from './Menus/ConnectionMonitor';
+import DisclaimerPopup from './Popups/DisclaimerPopup';
 
 const MainMap = () => {
     const [map, setMap] = useState(null);
@@ -20,6 +21,7 @@ const MainMap = () => {
                 <SelectMenu routeIds={routeIds} setRouteIds={setRouteIds} />
                 <HelpMenu />
                 <ConnectionMonitor />
+                <DisclaimerPopup />
             </div>
         </MenuProvider>
     );

@@ -1,111 +1,3 @@
-//VehiclePositions Sample:
-/*
-{
-    "header": {
-        "gtfs_realtime_version": "2.0",
-        "incrementality": 0,
-        "timestamp": 1749780231
-    },
-    "entity": [
-        {
-            "id": "27",
-            "is_deleted": false,
-            "trip_update": null,
-            "vehicle": {
-                "trip": {
-                    "trip_id": "2154700",
-                    "start_time": "",
-                    "start_date": "20250612",
-                    "schedule_relationship": 0,
-                    "route_id": "25",
-                    "direction_id": 1
-                },
-                "position": {
-                    "latitude": 43.02554,
-                    "longitude": -81.28163,
-                    "bearing": 270,
-                    "odometer": 0,
-                    "speed": 0
-                },
-                "current_stop_sequence": 0,
-                "current_status": 2,
-                "timestamp": 1749780213,
-                "congestion_level": 0,
-                "stop_id": "",
-                "vehicle": {
-                    "id": "3027",
-                    "label": "27",
-                    "license_plate": ""
-                },
-                "occupancy_status": 5,
-                "occupancy_percentage": 120,
-                "multi_carriage_details": []
-            },
-            "alert": null,
-            "shape": null,
-            "trip": null,
-            "route": null,
-            "stop": null
-        },
-*/
-// TripUpdates Sample:
-/*
-{
-    "header": {
-        "gtfs_realtime_version": "2.0",
-        "incrementality": 0,
-        "timestamp": 1749780261
-    },
-    "entity": [
-        {
-            "id": "2154700",
-            "is_deleted": false,
-            "trip_update": {
-                "trip": {
-                    "trip_id": "2154700",
-                    "start_time": "22:05:00",
-                    "start_date": "20250612",
-                    "schedule_relationship": 0,
-                    "route_id": "25",
-                    "direction_id": 1
-                },
-                "stop_time_update": [
-                    {
-                        "stop_sequence": 1,
-                        "arrival": {
-                            "delay": 13,
-                            "time": 1749780313,
-                            "uncertainty": 0,
-                            "schedule_time": 1749780300
-                        },
-                        "departure": {
-                            "delay": 13,
-                            "time": 1749780313,
-                            "uncertainty": 0,
-                            "schedule_time": 1749780300
-                        },
-                        "stop_id": "MASOSTO2",
-                        "schedule_relationship": 0,
-                        "stop_time_properties": {
-                            "assigned_stop_id": "",
-                            "stop_headsign": {
-                                "translation": [
-                                    {
-                                        "text": "",
-                                        "language": "en"
-                                    }
-                                ]
-                            },
-                            "pickup_type": 0,
-                            "drop_off_type": 1,
-                            "shape_dist_traveled": 0
-                        },
-                        "departure_occupancy_status": 0
-                    },
-*/
-
-
-
 import express from 'express';
 import { createServer } from 'http';
 import { WebSocketServer } from 'ws';
@@ -115,6 +7,8 @@ import fetch from 'node-fetch';
 import cors from 'cors';
 import { EventEmitter } from 'events';
 import { AbortController } from 'abort-controller';
+import fs from 'fs';
+import path from 'path';
 
 let isShuttingDown = false;
 
@@ -122,6 +16,23 @@ const VEHICLE_URL = 'http://gtfs.ltconline.ca/Vehicle/VehiclePositions.json';
 const TRIP_UPDATE_URL = 'http://gtfs.ltconline.ca/TripUpdate/TripUpdates.json';
 
 const VEHICLE_UPDATE = 'VEHICLE_UPDATE';
+
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Load stop mapping
+const stopsData = JSON.parse(
+    fs.readFileSync(path.join(__dirname, '..', 'client', 'public', 'stops.json'), 'utf8')
+);
+const stopIdMap = new Map();
+for (const stop of stopsData) {
+    if (stop.id && stop.stop_id) {
+        stopIdMap.set(String(stop.id), stop.stop_id);
+    }
+}
+console.log(`Loaded ${stopIdMap.size} stops for ID mapping`);
 
 const eventEmitter = new EventEmitter();
 // Increase max listeners to handle rapid subscription changes
@@ -433,20 +344,57 @@ async function handleData(vehicleJson, tripJson) {
         // Find the next stop_id for this vehicle
         let nextStopId = null;
         const tripId = v.trip.trip_id;
-        const currentSeq = v.current_stop_sequence;
-        const tripUpdate = tripUpdateMap.get(tripId);
-        if (tripUpdate && Array.isArray(tripUpdate.stop_time_update)) {
-            // Find the stop_time_update with stop_sequence just after current_stop_sequence
-            let minDiff = Infinity;
-            for (const stu of tripUpdate.stop_time_update) {
-                if (typeof stu.stop_sequence !== 'number') continue;
-                const diff = stu.stop_sequence - currentSeq;
-                if (diff > 0 && diff < minDiff) {
-                    minDiff = diff;
-                    nextStopId = stu.stop_id;
-                }
-            }
+        const currentStopId = v.stop_id;
+        const currentStatus = v.current_status;
+        
+        // Try mapping the numeric stop_id to alphanumeric code
+        let mappedStopId = currentStopId;
+        if (stopIdMap.has(currentStopId)) {
+            mappedStopId = stopIdMap.get(currentStopId);
         }
+
+        const tripUpdate = tripUpdateMap.get(tripId);
+
+        // Logic based on status
+        // 0 = INCOMING_AT, 1 = STOPPED_AT, 2 = IN_TRANSIT_TO
+        // If status is 2 (IN_TRANSIT_TO) or 0 (INCOMING_AT), the provided stop_id is the NEXT stop.
+        if (currentStatus === 2 || currentStatus === 0) {
+            nextStopId = mappedStopId;
+        } 
+        // If stopped at a stop (1), proceed to next stop in sequence
+        else if (currentStatus === 1 && tripUpdate && Array.isArray(tripUpdate.stop_time_update)) {
+             // Find current stop in updates
+             const currentIndex = tripUpdate.stop_time_update.findIndex(s => s.stop_id === mappedStopId);
+             if (currentIndex !== -1 && currentIndex + 1 < tripUpdate.stop_time_update.length) {
+                 nextStopId = tripUpdate.stop_time_update[currentIndex + 1].stop_id;
+             } else {
+                 // Fallback: if current stop not found in updates, assumes updates start with next stop?
+                 // Usually TripUpdates list future stops. If current stop is missing, take the first one?
+                 // But safer to assume if stopped, maybe just display "Stopped at X"? 
+                 // The UI expects "Destination" (next stop).
+                 // If we can't find next stop from updates, maybe just keep current destination?
+                 // Or take the first update if its sequence > current sequence? (But sequences are broken).
+                 
+                 // Checking if the first update stop is different from current stop
+                 if (tripUpdate.stop_time_update.length > 0) {
+                     const firstUpdate = tripUpdate.stop_time_update[0];
+                     if (firstUpdate.stop_id !== mappedStopId) {
+                         nextStopId = firstUpdate.stop_id;
+                     }
+                 }
+             }
+        }
+        
+        // Fallback or override with user logic if sequence logic was intended for robustness
+        // But since sequence logic is broken due to numbering mismatch, rely on stop_id status.
+
+        // Fallback: if still null, and status is 1, maybe just use mappedStopId to show current location?
+        // UI says "Destination". If stopped at X, usually destination is Y.
+        // If we can't find Y, showing X is better than "na".
+        if (!nextStopId && mappedStopId) {
+             nextStopId = mappedStopId;
+        }
+
         // Fallback: if not found, use na as marker
         if (!nextStopId) nextStopId = "na";
 
