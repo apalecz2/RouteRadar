@@ -11,7 +11,18 @@ const httpLink = new HttpLink({
 
 const wsClient = createClient({
     url: import.meta.env.VITE_BACKEND_WS_URL || 'ws://localhost:4000/graphql',
-    retryAttempts: 5,
+    retryAttempts: Infinity,
+    shouldRetry: () => true, // Always retry
+    keepAlive: 10000, // Ping every 10 seconds to detect stale connections faster
+    retryWait: async (retries) => {
+        // Update connection status with current retry count
+        connectionStatus.update({ connected: false, retryCount: retries + 1 });
+        
+        // Start with short delays to reconnect quickly, then back off slightly but cap it
+        // 1s, 2s, 4s, but cap at 5s to keep checking frequently
+        const delay = Math.min(Math.pow(2, retries) * 1000, 5000);
+        await new Promise((resolve) => setTimeout(resolve, delay));
+    },
     lazy: false, // This should make it connect immediately
     on: {
         connecting: () => {
@@ -26,14 +37,14 @@ const wsClient = createClient({
         },
         closed: (event) => {
             console.warn('[WS] Disconnected:', event);
-            const { retryCount } = connectionStatus.get();
-            connectionStatus.update({ connected: false, retryCount: retryCount + 1 });
+            connectionStatus.update({ connected: false });
         },
         error: (error) => {
             console.error('[WS] Error:', error);
             // Also mark as disconnected on error
             const { retryCount } = connectionStatus.get();
-            connectionStatus.update({ connected: false, retryCount: retryCount + 1 });
+            // Don't increment retryCount on error if it was just a connection error handled by closed
+            connectionStatus.update({ connected: false });
         },
     },
 });
@@ -41,26 +52,16 @@ const wsClient = createClient({
 // Use the fact that a test subscription will call complete but not next if it cannot connect, while it will
 // call both if connection is successful
 export const reconnectWebSocketHelper = async () => {
-    console.log('[WS] Forcing reconnection...');
+    console.log('[WS] Forcing reconnection check...');
 
-    // Mark as disconnected to trigger reconnection logic
-    connectionStatus.update({ connected: false, retryCount: connectionStatus.get().retryCount + 1 });
-
-    // Close the current connection but allow retry logic to reconnect
-    try {
-        // terminate() closes the socket immediately, but doesn't destroy the client like dispose()
-        wsClient.terminate(); 
-    } catch (e) {
-        console.warn('[WS] Error terminating connection:', e);
-    }
-
-    // Wait a moment for cleanup
-    await new Promise((res) => setTimeout(res, 100));
+    // Mark as disconnected to trigger reconnection logic if needed
+    // However, we rely on the client's built-in retry logic now.
+    // If the client is disconnected, we can just let it retry.
+    // But if we want to confirm connectivity, we can try a subscription.
 
     return new Promise((resolve) => {
         let sawNext = false;
         let sawComplete = false;
-
         let unsubscribe;
 
         // Check connection with a query
@@ -70,7 +71,6 @@ export const reconnectWebSocketHelper = async () => {
                 next: () => {
                     console.log('[WS] Test subscription successful - connection working');
                     sawNext = true;
-                    // Don't unsubscribe yet, let it complete naturally if it's a query
                 },
                 error: (error) => {
                     console.error('[WS] Test subscription error:', error);
@@ -79,12 +79,9 @@ export const reconnectWebSocketHelper = async () => {
                 complete: () => {
                     console.log('[WS] Test subscription completed');
                     sawComplete = true;
-
-                    // If saw next, connection is valid (even if complete came later)
                     if (sawNext) {
                         resolve(true);
                     } else {
-                        // If only complete fired without next, something is weird for a query
                         resolve(false);
                     }
                 },
@@ -93,19 +90,25 @@ export const reconnectWebSocketHelper = async () => {
 
         // Optional timeout safeguard
         setTimeout(() => {
-            if (!sawNext || !sawComplete) {
+            if (!sawNext && !sawComplete) {
                 console.warn('[WS] Test subscription timed out');
+                // Don't unsubscribe here if we want to keep trying?
+                // But for a test, we should time out.
                 if (unsubscribe) unsubscribe();
                 resolve(false);
             }
         }, 5000); // 5 seconds max
     }).then((success) => {
-        // Resubscribe only if the connection test passed
+        // We rely on the client's automatic reconnection.
+        // We don't need to manually resubscribeAll unless something is wrong with the link state.
         if (success) {
-            console.log('[WS] Reconnection succeeded, resubscribing...');
-            subscriptionManager.resubscribeAll();
+             console.log('[WS] Connection verified.');
+             // Check if we need to manually resync any state, but usually graphql-ws handles it.
+             // If we really need to force a refresh, we could.
+             // But let's assume automatic handling is sufficient for now.
+             subscriptionManager.resubscribeAll();
         } else {
-            console.warn('[WS] Reconnection failed');
+            console.warn('[WS] Reconnection check failed');
         }
         return success;
     });

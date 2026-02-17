@@ -1,6 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { getCachedData } from '../../utils/dataCache';
 import { getRouteColor } from '../../utils/getRouteColor';
+import subscriptionManager from '../../utils/subscriptionManager';
+import { connectionStatus } from '../../utils/connectionStatus';
 
 const formatTimeAgo = (secondsAgo) => {
     if (secondsAgo == 1) return `${secondsAgo}s ago`;
@@ -40,7 +42,6 @@ const BusPopupContent = ({ bus }) => {
         return () => { isMounted = false; };
     }, [bus.Destination]);
 
-    const time = new Date(bus.timestamp * 1000).toLocaleString();
     const timeAgo = formatTimeAgo(secondsAgo);
 
     // Extract route number and postfix, remove zero padding
@@ -69,6 +70,42 @@ const BusPopupContent = ({ bus }) => {
 
     // Consider data stale if more than 60 seconds old
     const isStale = secondsAgo > 60;
+    
+    // If data is stale but we think we are connected, force a resubscription
+    // Use a ref to prevent spamming resubscriptions
+    const hasAttemptedFix = useRef(false);
+
+    useEffect(() => {
+        if (isStale && !hasAttemptedFix.current && connectionStatus.get().connected) {
+            console.warn('[BusPopup] Data stale despite active connection. Triggering resubscription...');
+            hasAttemptedFix.current = true;
+            subscriptionManager.resubscribeAll();
+            
+            // Reset the flag after 30 seconds to allow another attempt if it happens again
+            setTimeout(() => {
+                hasAttemptedFix.current = false;
+            }, 30000);
+        }
+    }, [isStale]);
+    
+    // If extremely stale (> 90s), don't show the content at all, or show a specific "Lost Signal" message
+    // The marker should have been removed from the map by now.
+    const isVeryStale = secondsAgo > 90;
+
+    if (isVeryStale) {
+        return (
+             <div className="p-2 min-w-[220px] max-w-[80%]">
+                <div className="flex items-center justify-between mb-2">
+                    <h2 className="text-xl font-bold text-gray-800 tracking-wide text-left m-0 p-0">
+                        Signal Lost
+                    </h2>
+                </div>
+                 <div className="mt-2 text-sm text-red-600 font-semibold text-left">
+                    Connection to this bus was lost. Try refreshing for the latest data.
+                </div>
+             </div>
+        )
+    }
 
     return (
         <div className="p-2 min-w-[220px] max-w-[80%]">
@@ -77,11 +114,8 @@ const BusPopupContent = ({ bus }) => {
                 <h2 className="text-2xl font-bold text-black tracking-wide text-left m-0 p-0">
                     Route {routeDisplay}
                 </h2>
-                {/* The close button is rendered by BottomPopup, so nothing here */}
             </div>
-            {/* Route color bar */}
             <div style={{ background: routeColor, height: 6, borderRadius: 4, marginBottom: 10 }} />
-            {/* Removed bus number/vehicle id badge */}
             <div className="mb-2">
                 <span className="block text-gray-500 text-xs uppercase font-medium mb-1">Next Stop</span>
                 <span className="text-base font-semibold text-gray-900">{stopName}</span>
@@ -93,7 +127,7 @@ const BusPopupContent = ({ bus }) => {
                 </div>
             )}
             <div className="mt-3 text-sm text-black font-medium text-left">
-                Here at: {timeOnly} <span className="ml-2 text-gray-600">{timeAgo}</span>
+                Here at: {timeOnly} <span className="ml-2 text-gray-600">({timeAgo})</span>
             </div>
             {isStale && (
                 <div className="mt-4 text-sm text-yellow-600 font-semibold text-left">

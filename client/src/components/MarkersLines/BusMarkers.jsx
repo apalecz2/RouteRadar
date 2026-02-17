@@ -45,6 +45,9 @@ function createBusPinWrapper(initialColor = 'white', initialRotation = 0, initia
 }
 
 
+
+const STALE_THRESHOLD_SECONDS = 90; // 1.5 minutes
+
 const BusMarkers = ({ routeIds, map, busClicked, registerPinCreator, updateSelectionData }) => {
 
     const client = useApolloClient();
@@ -66,6 +69,35 @@ const BusMarkers = ({ routeIds, map, busClicked, registerPinCreator, updateSelec
             return element;
         });
     }, [registerPinCreator]);
+
+    // Periodically prune stale markers
+    useEffect(() => {
+        const intervalId = setInterval(() => {
+            const now = Math.floor(Date.now() / 1000);
+
+            Object.keys(markersRef.current).forEach(vehicleId => {
+                const marker = markersRef.current[vehicleId];
+                if (!marker || !marker.vehicleData) return;
+
+                const age = now - marker.vehicleData.timestamp;
+                if (age > STALE_THRESHOLD_SECONDS) {
+                    console.log(`Removing stale bus marker ${vehicleId} (age: ${age}s)`);
+                    marker.map = null;
+                    delete markersRef.current[vehicleId];
+
+                    // Also remove from routeToVehicleMap to keep it clean
+                    // This is a bit inefficient (linear search per vehicle) but number of routes per user selection is small
+                    Object.values(routeToVehicleMap.current).forEach(vehicleSet => {
+                        if (vehicleSet.has(vehicleId)) {
+                            vehicleSet.delete(vehicleId);
+                        }
+                    });
+                }
+            });
+        }, 5000); // Check every 5 seconds
+
+        return () => clearInterval(intervalId);
+    }, []);
 
     useEffect(() => {
         // Set the Apollo client in the subscription manager
@@ -113,6 +145,17 @@ const BusMarkers = ({ routeIds, map, busClicked, registerPinCreator, updateSelec
                 onNext: ({ data }) => {
                     const vehicle = data?.vehicleUpdates;
                     if (!vehicle) return;
+
+                    // Check if update is stale immediately
+                    const now = Math.floor(Date.now() / 1000);
+                    if (vehicle.timestamp && (now - vehicle.timestamp > STALE_THRESHOLD_SECONDS)) {
+                        // If marker exists, remove it because update is stale
+                        if (markersRef.current[vehicle.VehicleId]) {
+                            markersRef.current[vehicle.VehicleId].map = null;
+                            delete markersRef.current[vehicle.VehicleId];
+                        }
+                        return;
+                    }
 
                     const id = vehicle.VehicleId;
                     const pos = { lat: vehicle.Latitude, lng: vehicle.Longitude };
