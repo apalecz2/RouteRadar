@@ -129,6 +129,15 @@ export const reconnectWebSocket = async () => {
     //}
 }
 
+// Listen for browser online/offline events to trigger reconnection aggressively
+if (typeof window !== 'undefined') {
+    window.addEventListener('online', () => {
+        console.log('[WS] Browser back online. Forcing reconnection...');
+        // Force a check/reconnect cycle
+        reconnectWebSocket();
+    });
+}
+
 // Inject the function into connection status so it can call reconnect
 connectionStatus.setReconnectFunction(() => {
     reconnectWebSocket();

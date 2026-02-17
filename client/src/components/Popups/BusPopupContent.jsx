@@ -18,9 +18,13 @@ const BusPopupContent = ({ bus }) => {
     const [stopName, setStopName] = useState(bus.Destination);
 
     useEffect(() => {
+        // Update immediately
         setSecondsAgo(Math.floor(Date.now() / 1000) - bus.timestamp);
+        
         const interval = setInterval(() => {
-            setSecondsAgo(prev => prev + 1);
+            // Recalculate based on current time rather than incrementing
+            // This handles system sleep/wake correctly where intervals pause
+            setSecondsAgo(Math.floor(Date.now() / 1000) - bus.timestamp);
         }, 1000);
         return () => clearInterval(interval);
     }, [bus.timestamp]);
