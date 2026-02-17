@@ -51,6 +51,7 @@ const MapContainer = ({ onMapLoad }) => {
             onMapLoad(map); // Pass map instance to parent
 
             // Optional: Show user's current location
+            /*
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
                     (pos) => {
@@ -69,6 +70,7 @@ const MapContainer = ({ onMapLoad }) => {
                     (err) => console.error('Geolocation error:', err)
                 );
             }
+                */
         });
     }, [onMapLoad]);
 

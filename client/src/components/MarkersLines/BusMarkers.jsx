@@ -56,6 +56,7 @@ const BusMarkers = ({ routeIds, map, busClicked, registerPinCreator, updateSelec
     const markersRef = useRef({});
     const routeToVehicleMap = useRef({});
     const subscriptionIdsRef = useRef({});
+    const lastUpdateRef = useRef(Date.now());
 
     // Tell the parent where to call to make pin
     useEffect(() => {
@@ -143,6 +144,7 @@ const BusMarkers = ({ routeIds, map, busClicked, registerPinCreator, updateSelec
 
             const subscriptionId = subscriptionManager.subscribeToVehicle(routeId, {
                 onNext: ({ data }) => {
+                    lastUpdateRef.current = Date.now();
                     const vehicle = data?.vehicleUpdates;
                     if (!vehicle) return;
 
@@ -251,6 +253,33 @@ const BusMarkers = ({ routeIds, map, busClicked, registerPinCreator, updateSelec
 
     }, [routeIds, map, busClicked, updateSelectionData, routes]);
 
+
+    // Watch for global staleness (if all markers are stale/removed, trigger resubscribe)
+    useEffect(() => {
+        // Reset last update on mount
+        lastUpdateRef.current = Date.now();
+
+        const checkStaleInterval = setInterval(() => {
+            const now = Date.now();
+            const timeSinceLastUpdate = now - lastUpdateRef.current;
+
+            // If we have active subscriptions (routes are selected)
+            // AND we haven't received an update in > 45 seconds (half of STALE_THRESHOLD)
+            // AND we are supposedly connected
+            // THEN trigger a resync
+            const hasSubscriptions = Object.keys(subscriptionIdsRef.current).length > 0;
+
+            if (hasSubscriptions && timeSinceLastUpdate > 45000) {
+
+                console.warn(`[BusMarkers] No updates received in ${Math.round(timeSinceLastUpdate / 1000)}s. Triggering resubscription check...`);
+
+                subscriptionManager.resubscribeAll();
+                lastUpdateRef.current = Date.now(); // Reset to prevent spamming
+            }
+        }, 10000);
+
+        return () => clearInterval(checkStaleInterval);
+    }, [routeIds]); // Re-run if route selection changes
 
     return null;
 }
