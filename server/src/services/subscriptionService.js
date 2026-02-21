@@ -2,36 +2,22 @@ import { eventEmitter } from '../state.js';
 
 // Separate cleanup system for EventEmitter listeners
 export const subscriptionCleanup = {
-    activeSubscriptions: new Map(), // track active subscriptions
-    cleanupInterval: null,
+    /* 
+    activeSubscriptions: new Map(), // activeSubscriptions removed as it is no longer used for cleanup
+    */
 
     // Register a subscription for cleanup tracking
     registerSubscription: function (subscriptionId, eventName, handler) {
-        this.activeSubscriptions.set(subscriptionId, {
-            eventName,
-            handler,
-            timestamp: Date.now()
-        });
+        // No-op
     },
 
     // Unregister a subscription from cleanup tracking
     unregisterSubscription: function (subscriptionId) {
-        this.activeSubscriptions.delete(subscriptionId);
+        // No-op
     },
 
     // Force cleanup of orphaned listeners
     cleanupOrphanedListeners: function () {
-        const now = Date.now();
-        const maxAge = 5 * 60 * 1000; // 5 minutes
-
-        for (const [subscriptionId, subscription] of this.activeSubscriptions.entries()) {
-            if (now - subscription.timestamp > maxAge) {
-                console.log(`Cleaning up stale subscription: ${subscriptionId}`);
-                eventEmitter.off(subscription.eventName, subscription.handler);
-                this.activeSubscriptions.delete(subscriptionId);
-            }
-        }
-
         // Log current listener counts for debugging
         const eventNames = eventEmitter.eventNames();
         eventNames.forEach(eventName => {
@@ -42,13 +28,12 @@ export const subscriptionCleanup = {
         });
     },
 
-    // Immediate cleanup for specific event
-    cleanupEventListeners: function (eventName) {
+    // Check listener count for specific event
+    checkListenerCount: function (eventName) {
         const count = eventEmitter.listenerCount(eventName);
+        // Only log warning, do not remove listeners as it disconnects active users
         if (count > 10) {
-            console.log(`Cleaning up ${count} listeners for ${eventName}`);
-            // Remove all listeners for this event and let them be re-added
-            eventEmitter.removeAllListeners(eventName);
+            console.log(`Notice: ${count} listeners for ${eventName}`);
         }
     },
 

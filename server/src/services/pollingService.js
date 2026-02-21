@@ -23,8 +23,8 @@ async function safeFetch(url, timeout = 5000) {
 }
 
 async function handleData(vehicleJson, tripJson) {
-    latestVehicleData.clear();
-    latestArrivalData.clear();
+    const nextVehicleData = new Map();
+    const nextArrivalMap = new Map();
 
     // Build a lookup map for trip updates by trip_id
     const tripUpdateMap = new Map();
@@ -94,11 +94,15 @@ async function handleData(vehicleJson, tripJson) {
             occupancy_percentage: v.occupancy_percentage ?? null,
         };
 
-        if (!latestVehicleData.has(payload.RouteId)) {
-            latestVehicleData.set(payload.RouteId, []);
+        if (!nextVehicleData.has(payload.RouteId)) {
+            nextVehicleData.set(payload.RouteId, []);
         }
-        latestVehicleData.get(payload.RouteId).push(payload);
-        eventEmitter.emit(`VEHICLE_UPDATE_${payload.RouteId}`, payload);
+        nextVehicleData.get(payload.RouteId).push(payload);
+    }
+
+    // Emit batch updates per route
+    for (const [routeId, vehicles] of nextVehicleData) {
+        eventEmitter.emit(`VEHICLE_UPDATE_${routeId}`, vehicles);
     }
 
 
@@ -162,10 +166,21 @@ async function handleData(vehicleJson, tripJson) {
         }
 
         // Store in cache
-        latestArrivalData.set(stopId, arrivalsToEmit);
+        nextArrivalMap.set(stopId, arrivalsToEmit);
 
         // Emit batch once per stop
         eventEmitter.emit(`VEHICLE_UPDATE_STOP_${stopId}`, arrivalsToEmit);
+    }
+
+    // Refresh global state atomically
+    latestVehicleData.clear();
+    for (const [key, value] of nextVehicleData) {
+        latestVehicleData.set(key, value);
+    }
+
+    latestArrivalData.clear();
+    for (const [key, value] of nextArrivalMap) {
+        latestArrivalData.set(key, value);
     }
 }
 

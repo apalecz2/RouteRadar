@@ -43,9 +43,20 @@ const resolvers = {
                 const subscriptionId = `vehicle_${routeId}_${Date.now()}`;
 
                 // Check and cleanup if too many listeners exist
-                subscriptionCleanup.cleanupEventListeners(eventName);
+                subscriptionCleanup.checkListenerCount(eventName);
 
-                const handler = (payload) => queue.push(payload);
+                let triggerPromise = null;
+                const handler = (payload) => {
+                    if (Array.isArray(payload)) {
+                        queue.push(...payload);
+                    } else {
+                        queue.push(payload);
+                    }
+                    if (triggerPromise) {
+                        triggerPromise();
+                        triggerPromise = null;
+                    }
+                };
                 eventEmitter.on(eventName, handler);
 
                 // Register with cleanup system
@@ -61,11 +72,12 @@ const resolvers = {
                 try {
                     while (true) {
                         if (queue.length === 0) {
-                            await new Promise(resolve => setTimeout(resolve, 100));
-                            continue;
+                            await new Promise(resolve => triggerPromise = resolve);
                         }
 
-                        yield { vehicleUpdates: queue.shift() };
+                        while (queue.length > 0) {
+                            yield { vehicleUpdates: queue.shift() };
+                        }
                     }
                 } finally {
                     eventEmitter.off(eventName, handler);
@@ -80,10 +92,15 @@ const resolvers = {
                 const eventName = `VEHICLE_UPDATE_STOP_${stopId}`;
 
                 // Check and cleanup if too many listeners exist
-                subscriptionCleanup.cleanupEventListeners(eventName);
+                subscriptionCleanup.checkListenerCount(eventName);
 
+                let triggerPromise = null;
                 const handler = (payload) => {
                     queue.push(payload); // payload array of arrivals
+                    if (triggerPromise) {
+                        triggerPromise();
+                        triggerPromise = null;
+                    }
                 };
                 eventEmitter.on(eventName, handler);
 
@@ -96,11 +113,13 @@ const resolvers = {
                 try {
                     while (true) {
                         if (queue.length === 0) {
-                            await new Promise((res) => setTimeout(res, 100));
-                            continue;
+                            await new Promise((res) => triggerPromise = res);
                         }
-                        const nextArrivals = queue.shift();
-                        yield { stopUpdates: nextArrivals };
+                        
+                        while(queue.length > 0) {
+                            const nextArrivals = queue.shift();
+                            yield { stopUpdates: nextArrivals };
+                        }
                     }
                 } finally {
                     eventEmitter.off(eventName, handler);
