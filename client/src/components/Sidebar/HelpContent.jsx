@@ -31,14 +31,14 @@ const HelpContent = () => (
                         <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center flex-shrink-0 text-blue-600 font-bold">2</div>
                         <div>
                             <h4 className="font-semibold text-gray-900">View Arrivals</h4>
-                            <p className="text-sm text-gray-600">Click any <span className="font-bold">Stop</span> on the map to see upcoming arrival times.</p>
+                            <p className="text-sm text-gray-600">Click any <span className="font-bold">Stop</span> on the map to see upcoming arrival times. (Only shown once a route has been selected)</p>
                         </div>
                     </div>
                     <div className="flex gap-4">
                         <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center flex-shrink-0 text-blue-600 font-bold">3</div>
                         <div>
                             <h4 className="font-semibold text-gray-900">Track Buses</h4>
-                            <p className="text-sm text-gray-600">Watch buses move in real-time. Click a bus for route info and occupancy.</p>
+                            <p className="text-sm text-gray-600">Watch buses move in real-time. Click a bus for route info and occupancy. (If no routes are selected, all active buses are shown)</p>
                         </div>
                     </div>
                 </div>
@@ -86,7 +86,7 @@ const HelpContent = () => (
             </div>
 
             <p className="text-slate-300 text-sm mb-6 leading-relaxed">
-                This implies a software engineering portfolio project, leveraging modern web technologies to provide accurate transit data for London.
+                This is intended as a software engineering portfolio project. It uses modern web technologies to provide accurate transit data for London.
             </p>
 
             <div className="space-y-3">

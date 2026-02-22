@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { connectionStatus } from '../../utils/connectionStatus';
-import subscriptionManager from '../../utils/subscriptionManager';
 
 const ConnectionContent = () => {
     const [status, setStatus] = useState(connectionStatus.get());
@@ -38,22 +37,28 @@ const ConnectionContent = () => {
 
             <div className="space-y-2">
                 <h3 className="font-medium text-black">Details</h3>
+                <div className="bg-blue-50 text-blue-800 p-3 rounded-lg text-sm border border-blue-100 mb-2">
+                    <p>The app automatically manages connections and attempts to reconnect when offline. No action is usually required.</p>
+                </div>
                 <div className="space-y-2 text-sm text-gray-600 bg-gray-50 p-4 rounded-xl border border-gray-100">
                     <div className="flex justify-between">
                         <span>Status:</span>
                         <span className="font-mono">{status.connected ? 'Online' : 'Offline'}</span>
                     </div>
-                    <div className="flex justify-between">
-                        <span>Retries:</span>
-                        <span className="font-mono">{status.retryCount}</span>
-                    </div>
+                    {!status.connected && (
+                        <div className="flex justify-between text-orange-600">
+                            <span>Retries:</span>
+                            <span className="font-mono">{status.retryCount}</span>
+                        </div>
+                    )}
                     <div className="flex justify-between">
                         <span>Last Update:</span>
                         <span className="font-mono">{new Date().toLocaleTimeString()}</span>
                     </div>
                 </div>
             </div>
-
+            
+            {/*
             {!status.connected && (
                 <button
                     onClick={() => subscriptionManager.resubscribeAll()}
@@ -62,6 +67,7 @@ const ConnectionContent = () => {
                     Force Reconnect
                 </button>
             )}
+            */}
         </div>
     );
 };

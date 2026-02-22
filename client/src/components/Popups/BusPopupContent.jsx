@@ -164,9 +164,10 @@ const BusPopupContent = ({ bus }) => {
             </div>
 
             {/* Timestamps */}
-            <div className="text-xs text-gray-500 flex items-center justify-between px-1">
+            <div className="text-xs text-gray-600 mt-1 flex items-center gap-1 px-1">
+                <span className="material-symbols-outlined text-[14px]">update</span>
                 <span>Updated: {timeOnly}</span>
-                <span>{timeAgo}</span>
+                <span className="text-gray-500">({timeAgo})</span>
             </div>
 
             {isStale && (

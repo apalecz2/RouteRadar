@@ -3,8 +3,8 @@ import { Loader } from '@googlemaps/js-api-loader';
 
 const londonCoords = { lat: 42.9867, lng: -81.2486 };
 const mapBounds = {
-    north: 43.109,
-    south: 42.8644,
+    north: 43.2000,
+    south: 42.8000,
     west: -81.6466,
     east: -80.8506,
 };
