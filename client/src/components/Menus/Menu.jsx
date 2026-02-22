@@ -36,7 +36,7 @@ export const MenuProvider = ({ children }) => {
 const MenuButton = React.forwardRef(({ onClick, isOpen, disabled, children, className, position = "top-left", order = 0, ...props }, ref) => {
     const getPositionClasses = () => {
         const baseClasses = "left-8 md:left-12";
-        
+
         switch (position) {
             case "top-right":
                 return `top-8 right-8 md:right-12 md:top-12`;
@@ -62,10 +62,9 @@ const MenuButton = React.forwardRef(({ onClick, isOpen, disabled, children, clas
                 fixed ${getPositionClasses()} z-70
                 p-2 md:p-2
                 rounded-2xl
-                bg-white/10 dark:bg-white/5
-                backdrop-blur-2xl
-                border border-black/30 dark:border-black/30 shadow-xl
-                hover:bg-white/50
+                        bg-white
+                border border-black/30 shadow-xl
+                hover:bg-gray-100
                 flex items-center justify-center
                 h-12 w-12
                 ${className || ''}
@@ -84,10 +83,9 @@ const CloseButton = ({ onClick }) => (
             absolute top-6 right-6 z-20
             p-2 md:p-2
             rounded-2xl
-            bg-white/10 dark:bg-white/5
-            backdrop-blur-2xl
-            border border-black/30 dark:border-black/30 shadow-xl
-            hover:bg-white/50
+            bg-white
+            border border-black/30 shadow-xl
+            hover:bg-gray-100
             flex items-center justify-center
             h-12 w-12
         `}
@@ -142,12 +140,11 @@ const MenuContent = ({ children, isOpen, animatingOut, menuOrigin, title, onClos
                     w-full md:w-[420px]
                     min-h-[calc(100vh-4rem)] p-4 md:p-6 overflow-y-auto z-90
                     rounded-2xl md:rounded-3xl
-                    bg-white/10 dark:bg-white/5
-                    backdrop-blur-2xl
-                    border border-black/30 dark:border-black/30 shadow-2xl
+                    bg-white
+                    border border-black/30 shadow-2xl
                     before:content-[''] before:absolute before:inset-0
                     before:rounded-2xl md:before:rounded-3xl
-                    before:bg-gradient-to-br before:from-white/40 before:to-white/0
+                    before:bg-gradient-to-br before:from-white/10 before:to-transparent
                     before:pointer-events-none
                     pointer-events-auto
                     menu-pop

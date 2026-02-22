@@ -1,7 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { connectionStatus } from '../../utils/connectionStatus';
 import subscriptionManager from '../../utils/subscriptionManager';
-import { reconnectWebSocket } from '../../graph/apolloClient';
 import Menu from './Menu';
 
 const ICON_WARNING = (
@@ -31,17 +30,10 @@ const ConnectionStatusContent = ({ status }) => {
         return 'Disconnected';
     };
 
-    const getStatusIcon = () => {
-        if (status.connected) return '🟢';
-        if (status.retryCount > 0) return '🟡';
-        return '🔴';
-    };
-
     return (
         <div className="space-y-4">
             <div className="flex items-center justify-between p-3 bg-black/10 rounded-lg">
                 <div className="flex items-center space-x-3">
-                    <span className="text-2xl">{/*getStatusIcon()*/}</span>
                     <div>
                         <div className={`font-semibold ${getStatusColor()}`}>
                             {getStatusText()}
@@ -163,7 +155,7 @@ export default function ConnectionMonitor() {
     // Don't show the button if not needed
     if (!show && status.connected && status.retryCount === 0) return null;
 
-    let bgTailwind = 'bg-white/10 border-black/30';
+    let bgTailwind = 'bg-white border-black/30';
     let extra = '';
     let isClickable = false;
 

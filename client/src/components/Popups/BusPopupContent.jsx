@@ -98,44 +98,83 @@ const BusPopupContent = ({ bus }) => {
 
     if (isVeryStale) {
         return (
-             <div className="p-2 min-w-[220px] max-w-[80%]">
-                <div className="flex items-center justify-between mb-2">
-                    <h2 className="text-xl font-bold text-gray-800 tracking-wide text-left m-0 p-0">
-                        Signal Lost
-                    </h2>
+             <div className="p-4 bg-red-50 rounded-lg border border-red-100">
+                <div className="flex items-center gap-2 mb-2">
+                    <span className="material-symbols-outlined text-red-600">signal_wifi_off</span>
+                    <h2 className="text-lg font-bold text-red-900">Signal Lost</h2>
                 </div>
-                 <div className="mt-2 text-sm text-red-600 font-semibold text-left">
+                 <p className="text-sm text-red-700">
                     Connection to this bus was lost. Try refreshing for the latest data.
-                </div>
+                </p>
              </div>
         )
     }
 
     return (
-        <div className="p-2 min-w-[220px] max-w-[80%]">
+        <div className="space-y-4">
             
-            <div className="flex items-center justify-between mb-2">
-                <h2 className="text-2xl font-bold text-black tracking-wide text-left m-0 p-0">
-                    Route {routeDisplay}
-                </h2>
-            </div>
-            <div style={{ background: routeColor, height: 6, borderRadius: 4, marginBottom: 10 }} />
-            <div className="mb-2">
-                <span className="block text-gray-500 text-xs uppercase font-medium mb-1">Next Stop</span>
-                <span className="text-base font-semibold text-gray-900">{stopName}</span>
-            </div>
-            {bus.occupancy_percentage !== undefined && bus.occupancy_percentage !== null && (
-                <div className="mb-2">
-                    <span className="block text-gray-500 text-xs uppercase font-medium mb-1">Occupancy</span>
-                    <span className="text-base text-gray-900">{bus.occupancy_percentage}%</span>
+            {/* Header Card */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
+                <div className="h-2 w-full" style={{ background: routeColor }} />
+                <div className="p-4">
+                    <div className="flex items-start justify-between">
+                        <div>
+                            <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Route</span>
+                            <h2 className="text-3xl font-bold text-gray-900 leading-none mt-1">
+                                {routeDisplay}
+                            </h2>
+                        </div>
+                        {/* Status Badge */}
+                        <div className={`px-2 py-1 rounded-full text-xs font-medium ${isStale ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}`}>
+                            {isStale ? 'Delayed Signal' : 'Live'}
+                        </div>
+                    </div>
                 </div>
-            )}
-            <div className="mt-3 text-sm text-black font-medium text-left">
-                Here at: {timeOnly} <span className="ml-2 text-gray-600">({timeAgo})</span>
             </div>
+
+            {/* Info Cards */}
+            <div className="grid grid-cols-1 gap-3">
+                <div className="bg-gray-50 p-3 rounded-lg border border-gray-100">
+                    <div className="flex items-center gap-2 mb-1">
+                        <span className="material-symbols-outlined text-gray-400 text-lg">location_on</span>
+                        <span className="text-xs font-bold text-gray-500 uppercase">Next Stop</span>
+                    </div>
+                    <p className="text-base font-semibold text-gray-900 pl-7">{stopName}</p>
+                </div>
+
+                {bus.occupancy_percentage !== undefined && bus.occupancy_percentage !== null && (
+                    <div className="bg-gray-50 p-3 rounded-lg border border-gray-100">
+                         <div className="flex items-center gap-2 mb-1">
+                            <span className="material-symbols-outlined text-gray-400 text-lg">group</span>
+                            <span className="text-xs font-bold text-gray-500 uppercase">Occupancy</span>
+                        </div>
+                        <div className="pl-7">
+                            <div className="flex items-center gap-2">
+                                <span className="text-base font-semibold text-gray-900">{bus.occupancy_percentage}%</span>
+                                <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden max-w-[100px]">
+                                    <div 
+                                        className={`h-full rounded-full ${bus.occupancy_percentage > 80 ? 'bg-red-500' : bus.occupancy_percentage > 50 ? 'bg-yellow-500' : 'bg-green-500'}`}
+                                        style={{ width: `${bus.occupancy_percentage}%` }}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {/* Timestamps */}
+            <div className="text-xs text-gray-500 flex items-center justify-between px-1">
+                <span>Updated: {timeOnly}</span>
+                <span>{timeAgo}</span>
+            </div>
+
             {isStale && (
-                <div className="mt-4 text-sm text-yellow-600 font-semibold text-left">
-                    This bus information may be out of date. Check connection, and try again soon for the latest updates.
+                <div className="p-3 bg-yellow-50 border border-yellow-100 rounded-lg flex items-start gap-3">
+                     <span className="material-symbols-outlined text-yellow-600 text-lg mt-0.5">warning</span>
+                    <p className="text-sm text-yellow-800">
+                        This bus information may be out of date. Check connection, and try again soon.
+                    </p>
                 </div>
             )}
         </div>

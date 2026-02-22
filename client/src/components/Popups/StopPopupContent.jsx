@@ -1,26 +1,9 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
+import { getRouteColor } from '../../utils/getRouteColor';
 
 function formatTime(unixSeconds) {
     const date = new Date(unixSeconds * 1000);
     return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', second: '2-digit', });
-}
-
-function formatRelativeTime(unixSeconds) {
-    const now = Math.floor(Date.now() / 1000);
-    const diff = unixSeconds - now;
-    
-    if (diff < 0) {
-        return 'Past due';
-    } else if (diff < 60) {
-        return `${diff}s`;
-    } else if (diff < 3600) {
-        const minutes = Math.floor(diff / 60);
-        return `${minutes}m`;
-    } else {
-        const hours = Math.floor(diff / 3600);
-        const minutes = Math.floor((diff % 3600) / 60);
-        return `${hours}h ${minutes}m`;
-    }
 }
 
 function formatDelay(delaySeconds) {
@@ -37,14 +20,26 @@ function formatTimeAgo(secondsAgo) {
     return `${Math.floor(secondsAgo / 3600)}h ago`;
 }
 
-import { getRouteColor } from '../../utils/getRouteColor';
+function formatStopName(name) {
+    if (!name) return '';
+    return name
+        .toLowerCase()
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+}
 
 const StopPopupContent = ({ stop, arrivals = [] }) => {
     const [now, setNow] = useState(Math.floor(Date.now() / 1000));
     const [lastUpdateTime, setLastUpdateTime] = useState(null);
-    const [showScrollIndicator, setShowScrollIndicator] = useState(false);
-    const [isAtBottom, setIsAtBottom] = useState(false);
-    const scrollContainerRef = useRef(null);
+    const [collapsedRoutes, setCollapsedRoutes] = useState({});
+
+    const toggleRoute = (routeId) => {
+        setCollapsedRoutes(prev => ({
+            ...prev,
+            [routeId]: !prev[routeId]
+        }));
+    };
 
     useEffect(() => {
         const interval = setInterval(() => setNow(Math.floor(Date.now() / 1000)), 1_000);
@@ -56,42 +51,6 @@ const StopPopupContent = ({ stop, arrivals = [] }) => {
             setLastUpdateTime(Math.max(...arrivals.map(a => a.timestamp)));
         }
     }, [arrivals]);
-
-    const handleScroll = () => {
-        const element = scrollContainerRef.current;
-        if (!element) return;
-
-        const { scrollTop, scrollHeight, clientHeight } = element;
-        const isAtBottomNow = scrollTop + clientHeight >= scrollHeight - 5; // 5px threshold
-        const hasMoreContent = scrollHeight > clientHeight;
-        
-        setIsAtBottom(isAtBottomNow);
-        setShowScrollIndicator(hasMoreContent && !isAtBottomNow);
-    };
-
-    const handleScrollToBottom = () => {
-        const element = scrollContainerRef.current;
-        if (element) {
-            element.scrollTo({
-                top: element.scrollHeight,
-                behavior: 'smooth'
-            });
-        }
-    };
-
-    useEffect(() => {
-        const element = scrollContainerRef.current;
-        if (element) {
-            // Check initial state after DOM paint
-            setTimeout(() => handleScroll(), 0);
-            
-            // Add scroll event listener
-            element.addEventListener('scroll', handleScroll);
-            
-            // Cleanup
-            return () => element.removeEventListener('scroll', handleScroll);
-        }
-    }, [arrivals]); // Re-run when arrivals change
 
     if (!stop) return null;
 
@@ -107,108 +66,151 @@ const StopPopupContent = ({ stop, arrivals = [] }) => {
             .slice(0, 3);
     });
 
-    // For color bar, use first route in stop.routes if available
-    let mainRoute = stop.routes && stop.routes.length > 0 ? stop.routes[0] : null;
-    let routeColor = mainRoute ? getRouteColor(0) : '#2563eb'; // fallback blue
-
-    // If you want to color by route index, you could fetch all routes and find index
-
-    // Data freshness
-    const secondsAgo = lastUpdateTime ? now - lastUpdateTime : null;
-    const updatedText = secondsAgo !== null ? `Updated: ${formatTimeAgo(secondsAgo)}` : '';
+    // Sort routes numerically
+    const sortedRoutes = Object.entries(grouped).sort(([a], [b]) => {
+        const numA = parseInt(a, 10);
+        const numB = parseInt(b, 10);
+        if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+        return a.localeCompare(b);
+    });
 
     return (
-        <div className="p-1 md:p-2 min-w-[180px] max-w-[98vw] md:max-w-[100%] flex flex-col">
-            {/* Header - always visible */}
-            <div className="flex-shrink-0 max-w-[80%] md:max-w-[80%]">
-                <div className="flex items-center justify-between mb-1 md:mb-2">
-                    <h2 className="text-sm md:text-2xl font-bold text-black tracking-wide text-left m-0 p-0 truncate">
-                        {stop.name}
-                    </h2>
-                </div>
-                {/* Route color bar */}
-                <div style={{ background: routeColor, height: 4, borderRadius: 4, marginBottom: 6 }} className="md:h-[6px] md:mb-[10px]" />
-                <div className="mb-1 md:mb-2">
-                    <div className="flex items-center gap-1 md:gap-2">
-                        <span className="text-gray-500 text-xs md:text-sm uppercase font-semibold">Routes:</span>
-                        <span className="text-xs md:text-sm font-semibold text-gray-900 truncate">{stop.routes?.join(', ')}</span>
+        <div className="space-y-4 pb-20 md:pb-0"> 
+            
+            {/* Header Section */}
+            <div className="bg-white sticky -top-6 z-20 pt-6 pb-4 border-b border-gray-100 shadow-sm -mx-6 px-6 mb-4">
+                <div className="flex items-start justify-between gap-4">
+                    <div>
+                        <h2 className="text-xl md:text-2xl font-bold text-gray-900 leading-tight">
+                            {formatStopName(stop.name)}
+                        </h2>
+                        {lastUpdateTime && (
+                            <div className="text-xs text-gray-600 mt-1 flex items-center gap-1">
+                                <span className="material-symbols-outlined text-[14px]">update</span>
+                                <span>Updated: {new Date(lastUpdateTime * 1000).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', second: '2-digit' })}</span>
+                                <span className="text-gray-500">({formatTimeAgo(now - lastUpdateTime)})</span>
+                            </div>
+                        )}
                     </div>
+                     <span className="material-symbols-outlined text-gray-500">pin_drop</span>
+                </div>
+                
+                {/* Routes Badges */}
+                <div className="flex flex-wrap gap-1.5 mt-3">
+                    {stop.routes?.map((route, i) => (
+                        <div 
+                            key={i} 
+                            className="px-2.5 py-1 bg-gray-100 text-gray-700 rounded-md text-xs font-bold border border-gray-200 shadow-sm flex items-center"
+                        >
+                            {route}
+                        </div>
+                    ))}
                 </div>
             </div>
 
-            {/* Scrollable arrivals section */}
-            <div className="relative">
-                <div 
-                    ref={scrollContainerRef}
-                    className="mt-2 md:mt-4 pr-1 md:pr-4 p-0 md:p-2 text-xs md:text-sm text-black overflow-y-scroll bg-white/30 rounded-sm"
-                    style={{ maxHeight: 'calc(40vh - 120px)' }}
-                >
-                {Object.keys(grouped).length === 0 ? (
-                    <div className="text-xs md:text-sm text-gray-400 mt-2 md:mt-4">
-                        <div className="flex items-center gap-1 md:gap-2 mb-1 md:mb-2">
-                            <span className="w-2 h-2 bg-gray-400 rounded-full"></span>
-                            No upcoming arrivals
-                        </div>
-                        <p className="text-xs">This stop may not have active buses or the data may be unavailable.</p>
+            {/* Arrivals List */}
+            <div className="space-y-6 pt-2">
+                {sortedRoutes.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center p-8 text-center bg-gray-50 rounded-lg border border-gray-100 border-dashed">
+                        <span className="material-symbols-outlined text-gray-400 text-4xl mb-2">schedule</span>
+                        <h3 className="text-gray-900 font-semibold mb-1">No upcoming arrivals</h3>
+                        <p className="text-sm text-gray-600 max-w-[200px]">
+                            This stop may not have active buses right now, or the data is unavailable.
+                        </p>
                     </div>
                 ) : (
                     <>
-                        {Object.entries(grouped).map(([routeId, arrs], idx) => (
-                            <div key={routeId} className="mb-2 md:mb-3">
-                                <div className="flex items-center gap-1 md:gap-2 mb-1">
-                                    <span className="w-2 h-2 rounded-full" style={{ background: getRouteColor(idx) }}></span>
-                                    <span className="font-semibold text-xs md:text-sm">Route {routeId}</span>
-                                </div>
-                                <ul className="space-y-1">
-                                    {arrs.map((a, i) => {
-                                        const secondsToArrival = a.arrivalTime - now;
-                                        const showCountdown = secondsToArrival > 0 && secondsToArrival <= 600; // 10 min
-                                        return (
-                                            <li key={a.tripId + '-' + i} className="flex flex-col md:flex-row md:items-center md:justify-between bg-gray-100 rounded px-1 md:px-2 py-1 pr-2 md:pr-4">
-                                                <div className="grid grid-cols-3 w-full items-center min-w-0">
-                                                    <span className="text-gray-700 font-medium max-w-[80px] md:max-w-[120px] text-xs md:text-sm">
-                                                        {showCountdown
-                                                            ? (
-                                                                secondsToArrival < 60
-                                                                    ? <><span className="block md:inline">In:</span> <span className="block md:inline">{secondsToArrival}s</span></>
-                                                                    : <><span className="block md:inline">In:</span> <span className="block md:inline">{Math.floor(secondsToArrival / 60)}m {secondsToArrival % 60}s</span></>
-                                                            )
-                                                            : <><span className="block md:inline">At:</span> <span className="block md:inline">{formatTime(a.arrivalTime)}</span></>
-                                                        }
-                                                    </span>
-                                                    <span className="text-xs text-gray-500">Scheduled: {formatTime(a.arrivalTime - a.delaySeconds)}</span>
-                                                    {a.delaySeconds !== 0 && (
-                                                        <span className={`text-xs font-semibold max-w-[60px] md:max-w-[120px] pl-1 md:pl-4 ${a.delaySeconds > 0 ? 'text-yellow-600' : 'text-green-700'}`}>{a.delaySeconds > 0 ? 'Delay' : 'Early'}: {formatDelay(a.delaySeconds)}</span>
-                                                    )}
-                                                </div>
-                                            </li>
-                                        );
-                                    })}
-                                </ul>
-                            </div>
-                        ))}
-                    </>
-                )}
-                </div>
-                {/* Scroll Indicator */}
-                {showScrollIndicator && (
-                    <div className="absolute bottom-1 md:bottom-2 left-0 right-0 flex items-center justify-center pointer-events-none" onClick={handleScrollToBottom}>
-                        <div className="flex items-center justify-center h-8 w-8 md:h-12 md:w-12 rounded-2xl bg-white/75 dark:bg-white/75 backdrop-blur-2xl border border-black/30 dark:border-black/30 shadow-xl hover:bg-white/90 pointer-events-auto cursor-pointer">
-                            <svg className="w-4 h-4 md:w-4 md:h-4 animate-bounce" fill="#000000" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M16.707 10.293a1 1 0 010 1.414l-6 6a1 1 0 01-1.414 0l-6-6a1 1 0 111.414-1.414L9 14.586V3a1 1 0 012 0v11.586l4.293-4.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                            </svg>
-                        </div>
-                    </div>
-                )}
-            </div>
+                        {sortedRoutes.map(([routeId, arrs], idx) => {
+                            const isCollapsed = collapsedRoutes[routeId];
+                            
+                            return (
+                                <div key={routeId} className="space-y-1">
+                                    {/* Route Header */}
+                                    <div 
+                                        onClick={() => toggleRoute(routeId)}
+                                        className="flex items-center justify-between cursor-pointer hover:bg-gray-50 p-2 -mx-2 rounded-lg transition-colors group select-none"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-1.5 h-6 rounded-full" style={{ background: getRouteColor(idx) }} />
+                                            <h3 className="text-lg font-bold text-gray-800">
+                                                Route {routeId}
+                                            </h3>
+                                        </div>
+                                        <span className={`material-symbols-outlined text-gray-500 transition-transform duration-200 ${isCollapsed ? '-rotate-90' : ''}`}>
+                                            expand_more
+                                        </span>
+                                    </div>
 
-            {/* Footer - always visible */}
-            <div className="flex-shrink-0 mt-1 md:mt-2">
-                {lastUpdateTime && (
-                    <div className="text-xs md:text-sm text-black font-medium text-left">
-                        Data Updated: {new Date(lastUpdateTime * 1000).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', second: '2-digit' })}
-                        <span className="ml-2 text-gray-600">{formatTimeAgo(now - lastUpdateTime)}</span>
-                    </div>
+                                    {/* Arrival Cards */}
+                                    <div className={`grid gap-2 pl-3 transition-all duration-300 ease-in-out origin-top ${isCollapsed ? 'grid-rows-[0fr] opacity-0 scale-y-95 pointer-events-none overflow-hidden' : 'grid-rows-[1fr] opacity-100 scale-y-100'}`}>
+                                        <div className="min-h-0 space-y-2">
+                                            {arrs.map((a, i) => {
+                                                const secondsToArrival = a.arrivalTime - now;
+                                                const showCountdown = secondsToArrival > 0 && secondsToArrival <= 600; // 10 min
+                                                const isDelay = a.delaySeconds > 0;
+                                                const isEarly = a.delaySeconds < 0;
+
+                                                return (
+                                                    <div 
+                                                        key={a.tripId + '-' + i} 
+                                                        className="bg-white border border-gray-100 shadow-sm rounded-lg p-3 group relative overflow-hidden"
+                                                    >
+                                                        {/* Status Color Bar */}
+                                                        <div className={`absolute left-0 top-0 bottom-0 w-1 ${isDelay ? 'bg-red-400' : isEarly ? 'bg-green-400' : 'bg-gray-200'}`} />
+
+                                                        <div className="pl-2">
+                                                            <div className="flex justify-between items-start mb-1">
+                                                                {/* Time Display */}
+                                                                <div>
+                                                                    {showCountdown ? (
+                                                                        <span className={`text-2xl font-bold tracking-tight ${secondsToArrival < 60 ? 'text-green-600' : 'text-gray-900'}`}>
+                                                                            {secondsToArrival < 60 
+                                                                                ? `${secondsToArrival}s` 
+                                                                                : `${Math.floor(secondsToArrival / 60)}m ${secondsToArrival % 60}s`
+                                                                            }
+                                                                        </span>
+                                                                    ) : (
+                                                                        <div className="flex items-baseline gap-2">
+                                                                            <span className="text-xl font-bold text-gray-900">
+                                                                                {formatTime(a.arrivalTime)}
+                                                                            </span>
+                                                                            {secondsToArrival > 0 && (
+                                                                                <span className="text-sm font-medium text-gray-600">
+                                                                                    ({Math.floor(secondsToArrival / 60)}m)
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+
+                                                                {/* Delay Pill */}
+                                                                {a.delaySeconds !== 0 && (
+                                                                    <span className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded ml-2 ${
+                                                                        isDelay ? 'bg-red-50 text-red-600' : 'bg-green-50 text-green-600'
+                                                                    }`}>
+                                                                        {isDelay ? 'Late' : 'Early'} {formatDelay(a.delaySeconds)}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+
+                                                            <div className="flex justify-between items-center text-xs text-gray-500 mt-1">
+                                                                <span>Scheduled: {formatTime(a.arrivalTime - a.delaySeconds)}</span>
+                                                                {a.tripId && <span className="font-mono text-[10px] opacity-60">#{a.tripId.slice(-4)}</span>}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                        
+                        <div className="text-center py-6 text-xs font-medium text-gray-500 border-t border-gray-100 mt-4 border-dashed">
+                            <span>End of current arrival estimates</span>
+                        </div>
+                    </>
                 )}
             </div>
         </div>

@@ -8,13 +8,11 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import StopMarkers from './MarkersLines/StopMarkers';
 import BusMarkers from './MarkersLines/BusMarkers';
 import Routes from './MarkersLines/Routes';
-import PopupManager from './Popups/PopupManager';
 import { getRouteColor, getRouteHighlightColor } from '../utils/getRouteColor';
 import { useData } from './Providers/DataProvider';
 
-const SelectionsManager = ({ map, routeIds }) => {
+const SelectionsManager = ({ map, routeIds, selection, setSelection }) => {
 
-    const [selection, setSelection] = useState(null);
     const selectionRef = useRef(selection);
     useEffect(() => {
         selectionRef.current = selection;
@@ -30,6 +28,22 @@ const SelectionsManager = ({ map, routeIds }) => {
     const markersRef = useRef({});
 
     const { routes } = useData();
+
+    // Map click listener to clear selection
+    useEffect(() => {
+        if (!map) return;
+
+        const listener = map.addListener('click', () => {
+             // If we have a selection, clear it
+             if (selectionRef.current) {
+                 setSelection(null);
+             }
+        });
+
+        return () => {
+            if (listener) listener.remove();
+        };
+    }, [map, setSelection]);
 
 
     // Handles a marker clicked, obj: the content, type: string - stop, bus, route..., marker: reference to actual map marker
@@ -231,9 +245,8 @@ const SelectionsManager = ({ map, routeIds }) => {
                 routeClicked={handleMarkerClicked}
                 selectedRouteId={selection?.type === 'route' ? selection.id : null}
             />
-            <PopupManager selection={selection} clearSelection={() => setSelection(null)} />
         </>
     );
-}
+};
 
 export default SelectionsManager;

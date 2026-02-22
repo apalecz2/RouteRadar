@@ -24,22 +24,22 @@ const TimeDisplay = () => {
     return (
         <div
             className={`
-    fixed top-8 right-8 md:right-12 md:top-12 z-40
-    px-4 py-2 h-12 
-    rounded-2xl
-    bg-white/10 dark:bg-white/5
-    backdrop-blur-2xl
-    border border-black/30 dark:border-black/30 shadow-xl
-    text-black dark:text-black
-    font-mono text-base
-    flex items-center justify-center
-  `}
+                fixed top-6 right-6 z-[1000]
+                px-4 py-3
+                rounded-xl
+                bg-white
+                border border-gray-200 shadow-xl
+                text-black
+                font-medium text-lg
+                flex items-center gap-2
+                transition-all duration-300
+            `}
         >
-            <span key={animateKey} className="animate-fade-pulse block">
+            
+            <span key={animateKey} className="font-mono animate-fade-pulse block tracking-wide">
                 {formattedTime}
             </span>
         </div>
-
     );
 };
 

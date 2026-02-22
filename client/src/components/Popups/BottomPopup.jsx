@@ -8,10 +8,9 @@ const CloseButton = ({ onClick }) => (
         fixed top-6 right-6 md:right-6 z-50
         p-2 md:p-2
         rounded-2xl
-        bg-white/10 dark:bg-white/5
-        backdrop-blur-2xl
-        ${false ? '' : 'border border-black/30 dark:border-black/30 shadow-xl'}
-        hover:bg-white/50
+        bg-white
+        ${false ? '' : 'border border-black/30 shadow-xl'}
+        hover:bg-gray-100
         flex items-center justify-center
         h-12 w-12
       `}
@@ -89,11 +88,11 @@ const BottomPopup = ({ open, popupType, onClose, isClosing, triggerClose, childr
         fixed bottom-[2.5rem] left-1/2 
         w-[90%] md:w-[550px] max-w-[95%] p-6 z-50
         rounded-2xl md:rounded-3xl
-        bg-white/10 dark:bg-white/5 backdrop-blur-2xl
-        border border-white/30 dark:border-white/15 shadow-2xl
+        bg-white
+        border border-black/10 shadow-2xl
         before:content-[''] before:absolute before:inset-0
         before:rounded-2xl md:before:rounded-3xl
-        before:bg-gradient-to-br before:from-white/40 before:to-white/0
+        before:bg-gradient-to-br before:from-white/10 before:to-transparent
         before:pointer-events-none
         transition-all duration-300 transform
         ${open ? 'animate-slide-up' : isClosing ? 'animate-slide-down' : ''}

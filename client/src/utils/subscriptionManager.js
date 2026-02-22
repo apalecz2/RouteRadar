@@ -134,18 +134,23 @@ class SubscriptionManager {
             variables: { stopId },
         });
 
+        console.log(`[SubscriptionManager] Starting subscription for stop ${stopId}`);
+
         const subscription = observable.subscribe({
             next: (data) => {
+                console.log(`[SubscriptionManager] Received data for stop ${stopId}:`, data);
                 // data.stopUpdates is now an array
                 const activeSub = this.activeSubscriptions.get(subscriptionId);
                 if (activeSub) {
                     activeSub.callbacks.forEach(callback => {
                         if (callback.onNext) callback.onNext(data);
                     });
+                } else {
+                    console.warn(`[SubscriptionManager] No active subscription found for ID ${subscriptionId} (Stop ${stopId}) when processing data.`);
                 }
             },
             error: (error) => {
-                console.error('e', error)
+                console.error(`[SubscriptionManager] Error for stop ${stopId}:`, error);
                 const activeSub = this.activeSubscriptions.get(subscriptionId);
                 if (activeSub) {
                     activeSub.callbacks.forEach(callback => {
@@ -170,7 +175,7 @@ class SubscriptionManager {
             callbacks: Array.isArray(callbacks) ? callbacks : [callbacks]
         });
 
-        console.log(`Subscribed to stop updates for stop ${stopId}. Total subscriptions: ${this.activeSubscriptions.size}`);
+        console.log(`[SubscriptionManager] Subscribed to stop updates for stop ${stopId}. Total subscriptions: ${this.activeSubscriptions.size}`);
         return subscriptionId;
     }
 
