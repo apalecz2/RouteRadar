@@ -99,6 +99,19 @@ The system consists of two main components:
 1.  **Polling Server:** The backend repeatedly triggers the LTC GTFS-Realtime endpoints (`Vehicle/VehiclePositions.json` and `TripUpdate/TripUpdates.json`). It processes this data, mapping trip updates to vehicles, and caches the latest state.
 2.  **GraphQL Subscription Server:** When the frontend subscribes to updates (e.g., for a specific route), the server pushes the latest cached data to the client via WebSockets whenever new data is polled.
 
+## Scaling
+
+The backend is intentionally a single Node.js process: one polling loop fetches LTC's GTFS-Realtime feeds, caches the latest state in-memory (`server/src/state.js`), and fans updates out to subscribed clients via a Node `EventEmitter` feeding GraphQL subscriptions over WebSockets.
+
+This is deliberate, since fan-out to subscribers is O(subscribers) against an in-memory queue, so a single instance comfortably handles far more concurrent WebSocket clients than this project sees in practice. In-memory state is also the right call here: the data is inherently ephemeral (live vehicle positions), so there's nothing to persist -- a restart just repopulates from the next poll cycle (~30s).
+
+Note that where this design would break down is horizontal scaling -- running multiple server instances behind a load balancer for redundancy or throughput. As-is, each instance would poll LTC independently (wasteful, and risks rate-limiting), and a client connected to instance A would never see events polled by instance B, since both the poller and the pub/sub are process-local. Solving that would mean:
+
+- Decoupling the poller into its own single worker process, so LTC is only ever polled once.
+- Replacing the in-process `EventEmitter` with a shared pub/sub layer (e.g. Redis Pub/Sub) that all API instances subscribe to, so any instance can serve any client regardless of which one is "connected" to a given WebSocket.
+
+Redis (or similar) solves that problem specifically. It's not a general performance upgrade, and adding it without the multi-instance requirement would just be an unused dependency. It isn't used here because the current single-instance design already meets the project's actual load.
+
 ## Deployment
 
 The project is deployed on [Render](https://render.com/). `render.yaml` configures the static frontend build; the backend WebSocket server is deployed as a separate Render web service.
