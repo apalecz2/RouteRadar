@@ -4,13 +4,15 @@ import { WebSocketServer } from 'ws';
 import { useServer } from 'graphql-ws/lib/use/ws';
 import cors from 'cors';
 
-import { PORT } from './src/config.js';
-import { subscriptionCleanup } from './src/services/subscriptionService.js';
+import { PORT, ALLOWED_ORIGINS } from './src/config.js';
+import { listenerMonitor } from './src/services/subscriptionService.js';
 import { predictivePollingLoop, shutdownPolling, startWatchdog } from './src/services/pollingService.js';
 import { schema } from './src/schema.js';
 
 const app = express();
-app.use(cors());
+app.use(cors({
+    origin: ALLOWED_ORIGINS,
+}));
 app.get('/', (_, res) => res.send('LTC GraphQL WebSocket server running'));
 
 // Keep alive endpoint to keep server running
@@ -31,8 +33,8 @@ useServer({ schema }, wsServer);
 startWatchdog();
 predictivePollingLoop();
 
-// Start the subscription cleanup system
-subscriptionCleanup.start();
+// Start the listener leak monitor
+listenerMonitor.start();
 
 httpServer.listen(PORT, () => {
     console.log(`Server ready at http://localhost:${PORT}/graphql`);
@@ -43,8 +45,8 @@ process.on('SIGINT', async () => {
     console.log('\nShutting down...');
     shutdownPolling();
 
-    // Stop the cleanup system
-    subscriptionCleanup.stop();
+    // Stop the listener leak monitor
+    listenerMonitor.stop();
 
     wsServer.close();
     httpServer.close(() => {

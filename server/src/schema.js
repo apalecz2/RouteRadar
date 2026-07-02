@@ -1,6 +1,6 @@
 import { makeExecutableSchema } from '@graphql-tools/schema';
 import { eventEmitter, latestVehicleData, latestArrivalData } from './state.js';
-import { subscriptionCleanup } from './services/subscriptionService.js';
+import { listenerMonitor } from './services/subscriptionService.js';
 
 const typeDefs = `
     type Vehicle {
@@ -40,10 +40,9 @@ const resolvers = {
             subscribe: async function* (_, { routeId }) {
                 const eventName = `VEHICLE_UPDATE_${routeId}`;
                 const queue = [];
-                const subscriptionId = `vehicle_${routeId}_${Date.now()}`;
 
-                // Check and cleanup if too many listeners exist
-                subscriptionCleanup.checkListenerCount(eventName);
+                // Warn if too many listeners have accumulated for this event
+                listenerMonitor.checkListenerCount(eventName);
 
                 let triggerPromise = null;
                 const handler = (payload) => {
@@ -58,9 +57,6 @@ const resolvers = {
                     }
                 };
                 eventEmitter.on(eventName, handler);
-
-                // Register with cleanup system
-                subscriptionCleanup.registerSubscription(subscriptionId, eventName, handler);
 
                 // Immediately enqueue latest data for this routeId
                 if (latestVehicleData.has(routeId)) {
@@ -81,18 +77,16 @@ const resolvers = {
                     }
                 } finally {
                     eventEmitter.off(eventName, handler);
-                    subscriptionCleanup.unregisterSubscription(subscriptionId);
                 }
             },
         },
         stopUpdates: {
             subscribe: async function* (_, { stopId }) {
                 const queue = [];
-                const subscriptionId = `stop_${stopId}_${Date.now()}`;
                 const eventName = `VEHICLE_UPDATE_STOP_${stopId}`;
 
-                // Check and cleanup if too many listeners exist
-                subscriptionCleanup.checkListenerCount(eventName);
+                // Warn if too many listeners have accumulated for this event
+                listenerMonitor.checkListenerCount(eventName);
 
                 let triggerPromise = null;
                 const handler = (payload) => {
@@ -104,9 +98,6 @@ const resolvers = {
                 };
                 eventEmitter.on(eventName, handler);
 
-                // Register with cleanup system
-                subscriptionCleanup.registerSubscription(subscriptionId, eventName, handler);
-
                 if (latestArrivalData.has(stopId)) {
                     queue.push(latestArrivalData.get(stopId));
                 }
@@ -115,7 +106,7 @@ const resolvers = {
                         if (queue.length === 0) {
                             await new Promise((res) => triggerPromise = res);
                         }
-                        
+
                         while(queue.length > 0) {
                             const nextArrivals = queue.shift();
                             yield { stopUpdates: nextArrivals };
@@ -123,7 +114,6 @@ const resolvers = {
                     }
                 } finally {
                     eventEmitter.off(eventName, handler);
-                    subscriptionCleanup.unregisterSubscription(subscriptionId);
                 }
             }
         }
