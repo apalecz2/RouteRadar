@@ -105,7 +105,6 @@ class SubscriptionManager {
             callbacks: Array.isArray(callbacks) ? callbacks : [callbacks]
         });
 
-        console.log(`Subscribed to vehicle updates for route ${routeId}. Total subscriptions: ${this.activeSubscriptions.size}`);
         return subscriptionId;
     }
 
@@ -134,11 +133,8 @@ class SubscriptionManager {
             variables: { stopId },
         });
 
-        console.log(`[SubscriptionManager] Starting subscription for stop ${stopId}`);
-
         const subscription = observable.subscribe({
             next: (data) => {
-                console.log(`[SubscriptionManager] Received data for stop ${stopId}:`, data);
                 // data.stopUpdates is now an array
                 const activeSub = this.activeSubscriptions.get(subscriptionId);
                 if (activeSub) {
@@ -175,7 +171,6 @@ class SubscriptionManager {
             callbacks: Array.isArray(callbacks) ? callbacks : [callbacks]
         });
 
-        console.log(`[SubscriptionManager] Subscribed to stop updates for stop ${stopId}. Total subscriptions: ${this.activeSubscriptions.size}`);
         return subscriptionId;
     }
 
@@ -191,7 +186,6 @@ class SubscriptionManager {
         if (activeSub.callbacks.length === 0) {
             activeSub.subscription.unsubscribe();
             this.activeSubscriptions.delete(subscriptionId);
-            console.log(`Unsubscribed from ${activeSub.type} updates. Total subscriptions: ${this.activeSubscriptions.size}`);
         }
     }
 
@@ -202,7 +196,6 @@ class SubscriptionManager {
 
         activeSub.subscription.unsubscribe();
         this.activeSubscriptions.delete(subscriptionId);
-        console.log(`Completely unsubscribed from ${activeSub.type} updates. Total subscriptions: ${this.activeSubscriptions.size}`);
     }
 
     // Get all active subscriptions
@@ -245,13 +238,13 @@ class SubscriptionManager {
         const subscriptionsToResubscribe = Array.from(this.activeSubscriptions.entries());
 
         // Clear current subscriptions
-        for (const [id, sub] of this.activeSubscriptions) {
+        for (const [, sub] of this.activeSubscriptions) {
             sub.subscription.unsubscribe();
         }
         this.activeSubscriptions.clear();
 
         // Resubscribe to all
-        subscriptionsToResubscribe.forEach(([id, sub]) => {
+        subscriptionsToResubscribe.forEach(([, sub]) => {
             if (sub.type === 'vehicle') {
                 // Pass the array of callbacks
                 this.subscribeToVehicle(sub.variables.routeId, sub.callbacks);
@@ -263,11 +256,10 @@ class SubscriptionManager {
 
     // Clear all subscriptions
     clearAll() {
-        for (const [id, sub] of this.activeSubscriptions) {
+        for (const [, sub] of this.activeSubscriptions) {
             sub.subscription.unsubscribe();
         }
         this.activeSubscriptions.clear();
-        console.log('Cleared all subscriptions');
     }
 }
 

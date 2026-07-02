@@ -9,7 +9,7 @@ const CloseButton = ({ onClick }) => (
         p-2 md:p-2
         rounded-2xl
         bg-white
-        ${false ? '' : 'border border-black/30 shadow-xl'}
+        border border-black/30 shadow-xl
         hover:bg-gray-100
         flex items-center justify-center
         h-12 w-12
@@ -34,13 +34,14 @@ const CloseButton = ({ onClick }) => (
 
 const BottomPopup = ({ open, popupType, onClose, isClosing, triggerClose, children }) => {
     const [shouldRender, setShouldRender] = useState(false);
-    const [isAnimating, setIsAnimating] = useState(false);
     const [currentContent, setCurrentContent] = useState(null);
     const [lastPopupType, setLastPopupType] = useState(null);
 
     // Make sure css animations sum to this
     const animationDuration = 300;
 
+    // Deliberately keyed only on [open, popupType]: content updates for the *same*
+    // popup are handled by the effect below so they don't retrigger the open/close animation.
     useEffect(() => {
         if (open) {
             const isNewPopup = popupType !== lastPopupType;
@@ -49,10 +50,8 @@ const BottomPopup = ({ open, popupType, onClose, isClosing, triggerClose, childr
 
             if (isNewPopup || !currentContent) {
                 // Animate only when switching to a different popup
-                setIsAnimating(false);
                 const timeoutId = setTimeout(() => {
                     setCurrentContent(children);
-                    setIsAnimating(true);
                     setLastPopupType(popupType);
                 }, currentContent ? animationDuration : 10);
                 return () => clearTimeout(timeoutId);
@@ -62,7 +61,6 @@ const BottomPopup = ({ open, popupType, onClose, isClosing, triggerClose, childr
             }
         } else {
             // Closing popup
-            setIsAnimating(false);
             const timeoutId = setTimeout(() => {
                 setShouldRender(false);
                 setCurrentContent(null);
@@ -71,13 +69,16 @@ const BottomPopup = ({ open, popupType, onClose, isClosing, triggerClose, childr
             }, animationDuration);
             return () => clearTimeout(timeoutId);
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [open, popupType]);
 
-    // This effect ensures live updates update the popup content
+    // This effect ensures live updates update the popup content.
+    // Deliberately keyed only on [children] — see comment above.
     useEffect(() => {
         if (open && popupType === lastPopupType) {
             setCurrentContent(children);
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [children]); // Only runs if content changes for same popup
 
     if (!shouldRender) return null;

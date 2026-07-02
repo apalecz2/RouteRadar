@@ -3,7 +3,6 @@ import AbstractMenu from './Menu';
 
 const HelpContent = () => {
     const [showScrollIndicator, setShowScrollIndicator] = useState(false);
-    const [isAtBottom, setIsAtBottom] = useState(false);
     const scrollContainerRef = useRef(null);
 
     const handleScroll = () => {
@@ -13,8 +12,7 @@ const HelpContent = () => {
         const { scrollTop, scrollHeight, clientHeight } = element;
         const isAtBottomNow = scrollTop + clientHeight >= scrollHeight - 5; // 5px threshold
         const hasMoreContent = scrollHeight > clientHeight;
-        
-        setIsAtBottom(isAtBottomNow);
+
         setShowScrollIndicator(hasMoreContent && !isAtBottomNow);
     };
 

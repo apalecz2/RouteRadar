@@ -13,7 +13,7 @@ const SelectionDetails = ({ selection }) => {
     const currentSubscribedStopRef = useRef(null);
 
     // Clean up subscription when component unmounts or selection changes
-    const cleanupSubscription = useCallback((reason = 'unknown') => {
+    const cleanupSubscription = useCallback(() => {
         if (currentSubscriptionIdRef.current) {
             subscriptionManager.unsubscribeCompletely(currentSubscriptionIdRef.current);
             currentSubscriptionIdRef.current = null;
@@ -42,7 +42,7 @@ const SelectionDetails = ({ selection }) => {
         }
 
         // Clean up any existing subscription first
-        cleanupSubscription(force ? 'forced resubscription' : 'new subscription for different stop');
+        cleanupSubscription();
 
         // Track the current subscribed stop
         currentSubscribedStopRef.current = stopId;
@@ -55,7 +55,6 @@ const SelectionDetails = ({ selection }) => {
             
             const subscriptionId = subscriptionManager.subscribeToStop(stopId, {
                 onNext: ({ data }) => {
-                    //console.log('Received stop updates:', data); 
                     const arrivals = data?.stopUpdates;
                     if (!Array.isArray(arrivals)) return;
 
@@ -108,7 +107,7 @@ const SelectionDetails = ({ selection }) => {
                 subscribeToStopUpdates(stopId);
             } else {
                  if (currentSubscriptionIdRef.current) {
-                     cleanupSubscription('switched to non-stop selection');
+                     cleanupSubscription();
                  }
                  
                  setActivePopup({
@@ -118,7 +117,7 @@ const SelectionDetails = ({ selection }) => {
             }
         } else {
             // Selection cleared
-            cleanupSubscription('selection cleared');
+            cleanupSubscription();
             setActivePopup(null);
         }
     }, [selection, subscribeToStopUpdates, cleanupSubscription]);
@@ -126,7 +125,7 @@ const SelectionDetails = ({ selection }) => {
     // Cleanup on unmount
     useEffect(() => {
         return () => {
-            cleanupSubscription('component unmount');
+            cleanupSubscription();
         };
     }, [cleanupSubscription]);
 

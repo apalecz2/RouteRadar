@@ -105,7 +105,7 @@ The project is deployed on [Render](https://render.com/). `render.yaml` configur
 
 ## License
 
-MIT — see [LICENSE](./LICENSE).
+MIT — see [LICENSE.md](./LICENSE.md).
 
 ## Author
 

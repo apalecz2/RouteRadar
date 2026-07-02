@@ -47,18 +47,6 @@ const TransitDirections = ({ map }) => {
             (result, status) => {
                 if (status === 'OK' && result.routes && result.routes.length > 0) {
                     setDirections(result.routes[0]);
-                    // Log the full route object
-                    console.log('Full directions route:', result.routes[0]);
-                    // Log all legs and steps
-                    result.routes[0].legs.forEach((leg, i) => {
-                        console.log(`Leg ${i + 1}:`, leg);
-                        leg.steps.forEach((step, j) => {
-                            console.log(`  Step ${j + 1}:`, step);
-                            if (step.transit) {
-                                console.log('    Transit details:', step.transit);
-                            }
-                        });
-                    });
                 } else {
                     setDirections(null);
                     alert('No transit directions found.');

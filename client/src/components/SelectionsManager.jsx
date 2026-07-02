@@ -3,7 +3,7 @@
 // There is one state for the currently selected object. The object has the id, and type
 // If this changes, the popup needs to be updated, and ping animations etc
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 
 import StopMarkers from './MarkersLines/StopMarkers';
 import BusMarkers from './MarkersLines/BusMarkers';
@@ -56,11 +56,9 @@ const SelectionsManager = ({ map, routeIds, selection, setSelection }) => {
         // Use the ref here to prevent needing 'selection' in the dependency array
         if (!selectionRef.current || id !== selectionRef.current.id || type !== selectionRef.current.type) {
             // New selection - set it
-            //console.log(`New selection: ${type} ${id}`);
             setSelection({ id, type, data: obj, marker });
         } else {
             // Same marker clicked - only update if data actually changed
-            //console.log(`Same marker clicked: ${type} ${id}`);
 
             // For buses, compare relevant fields that might change
             if (type === 'bus') {
@@ -76,13 +74,10 @@ const SelectionsManager = ({ map, routeIds, selection, setSelection }) => {
                     currentData.RouteId !== newData.RouteId ||
                     currentData.TripId !== newData.TripId;
 
-                if (hasChanged) {
-                    //console.log(`Bus data changed, updating selection`);
-                    setSelection(prev => ({ ...prev, data: obj }));
-                } else {
-                    //console.log(`Bus data unchanged, ignoring click`);
-                }
                 // If no relevant data changed, do nothing (prevent unnecessary re-renders)
+                if (hasChanged) {
+                    setSelection(prev => ({ ...prev, data: obj }));
+                }
             } else if (type === 'stop') {
                 // For stops, data rarely changes, so we don't update on re-click
                 // This prevents the popup from unnecessarily reopening
@@ -95,10 +90,7 @@ const SelectionsManager = ({ map, routeIds, selection, setSelection }) => {
                     currentData.routes?.join(',') !== newData.routes?.join(',');
 
                 if (hasChanged) {
-                    //console.log(`Stop data changed, updating selection`);
                     setSelection(prev => ({ ...prev, data: obj }));
-                } else {
-                    //console.log(`Stop data unchanged, ignoring click`);
                 }
             } else if (type === 'route') {
                 // For routes, data rarely changes, so we don't update on re-click
@@ -112,14 +104,11 @@ const SelectionsManager = ({ map, routeIds, selection, setSelection }) => {
                     currentData.segments?.length !== newData.segments?.length;
 
                 if (hasChanged) {
-                    //console.log(`Route data changed, updating selection`);
                     setSelection(prev => ({ ...prev, data: obj }));
-                } else {
-                    //console.log(`Route data unchanged, ignoring click`);
                 }
             }
         }
-    }, []);
+    }, [setSelection]);
 
     // Update selection data when marker data changes (for real-time updates)
     const updateSelectionData = useCallback((id, newData) => {
@@ -133,7 +122,7 @@ const SelectionsManager = ({ map, routeIds, selection, setSelection }) => {
             }
             return prev;
         });
-    }, []);
+    }, [setSelection]);
 
     // Run when selection changes. For ANY - stops, buses
     useEffect(() => {
@@ -167,12 +156,10 @@ const SelectionsManager = ({ map, routeIds, selection, setSelection }) => {
             if (selection.marker) {
                 if (selection.type === 'bus' && selection.marker._updatePin) {
                     const rotation = selection.data.Bearing || 0;
-                    let color = 'white';
                     let highlightColor = '#ff0000';
                     if (routes && routes.length > 0 && selection.data.RouteId) {
                         const routeIndex = routes.findIndex(r => String(r.id) === String(selection.data.RouteId));
                         if (routeIndex !== -1) {
-                            color = getRouteColor(routeIndex);
                             highlightColor = getRouteHighlightColor(routeIndex);
                         }
                     }

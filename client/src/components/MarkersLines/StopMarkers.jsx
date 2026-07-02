@@ -85,7 +85,7 @@ export function createStopPin(colour = '#ffffff', withPing = false) {
 // Based on the route selection, display the stops for the selection
 // Attach listeners to each marker, and pass to parent
 const StopMarkers = ({ map, routeIds, stopClicked, registerPinCreator }) => {
-    const { stops, loading, error } = useData();
+    const { stops } = useData();
     const markersRef = useRef(new Map());
 
     // Tell the parent where to call to create a pin
@@ -153,11 +153,12 @@ const StopMarkers = ({ map, routeIds, stopClicked, registerPinCreator }) => {
 
     useEffect(() => {
         // Cleanup all markers on unmount
+        const markers = markersRef.current;
         return () => {
-            for (const marker of markersRef.current.values()) {
+            for (const marker of markers.values()) {
                 marker.map = null;
             }
-            markersRef.current.clear();
+            markers.clear();
         };
     }, []);
 

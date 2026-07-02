@@ -12,13 +12,9 @@ let watchInterval = null;
 const startWatchingConnection = () => {
     if (watchInterval) return; // Already running
 
-    console.log('[ConnectionStatus] Starting watch...');
-
     watchInterval = setInterval(() => {
         const { retryCount, connected, hasConnected } = state;
         if (retryCount >= 2 && !connected && !hasConnected) {
-            console.log('[ConnectionStatus] Still disconnected. Running watch action...');
-
             if (reconnectFn) reconnectFn();
 
         } else {
@@ -35,13 +31,9 @@ const startWatchingReConnection = () => {
     
     if (watchReconnInterval) return; // Already running
 
-    console.log('[ConnectionStatus] Starting watch...');
-
     watchReconnInterval = setInterval(() => {
         const { connected, hasConnected } = state;
         if (!connected && hasConnected) {
-            console.log('[ConnectionStatus] Still disconnected. Running watch action...');
-
             if (reconnectFn) reconnectFn();
 
         } else {
@@ -63,9 +55,7 @@ export const connectionStatus = {
     },
 
     update: (updates) => {
-        const oldState = { ...state };
         state = { ...state, ...updates };
-        console.log('[ConnectionStatus] State updated:', { old: oldState, new: state });
         listeners.forEach((cb) => cb(state));
 
         // Start watching for initial connection, if initial connection cannot be made right away

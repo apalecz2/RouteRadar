@@ -139,6 +139,10 @@ export default function ConnectionMonitor() {
             if (reconnectTimeout.current) clearTimeout(reconnectTimeout.current);
             if (fadeTimeout.current) clearTimeout(fadeTimeout.current);
         };
+        // Deliberately excludes recentlyReconnected: it's set inside this effect, so adding it as a
+        // dependency would re-run the effect right after setRecentlyReconnected(true) and cancel the
+        // hide timeout that was just scheduled.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [status.connected, status.retryCount]);
 
     // Resubscribe logic (unchanged)

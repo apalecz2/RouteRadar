@@ -82,7 +82,6 @@ const BusMarkers = ({ routeIds, map, busClicked, registerPinCreator, updateSelec
 
                 const age = now - marker.vehicleData.timestamp;
                 if (age > STALE_THRESHOLD_SECONDS) {
-                    console.log(`Removing stale bus marker ${vehicleId} (age: ${age}s)`);
                     marker.map = null;
                     delete markersRef.current[vehicleId];
 
@@ -230,9 +229,6 @@ const BusMarkers = ({ routeIds, map, busClicked, registerPinCreator, updateSelec
                 onError: (error) => {
                     console.error(`Error in vehicle subscription for route ${routeId}:`, error);
                 },
-                onComplete: () => {
-                    console.log(`Vehicle subscription completed for route ${routeId}`);
-                }
             });
 
             subscriptionIdsRef.current[routeId] = subscriptionId;
@@ -251,7 +247,7 @@ const BusMarkers = ({ routeIds, map, busClicked, registerPinCreator, updateSelec
         };
 
 
-    }, [routeIds, map, busClicked, updateSelectionData, routes]);
+    }, [routeIds, map, busClicked, updateSelectionData, routes, client]);
 
 
     // Watch for global staleness (if all markers are stale/removed, trigger resubscribe)
