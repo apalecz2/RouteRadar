@@ -22,7 +22,7 @@ async function safeFetch(url, timeout = 5000) {
     }
 }
 
-async function handleData(vehicleJson, tripJson) {
+export async function handleData(vehicleJson, tripJson) {
     const nextVehicleData = new Map();
     const nextArrivalMap = new Map();
 
