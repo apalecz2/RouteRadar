@@ -133,7 +133,11 @@ const StopMarkers = ({ map, routeIds, stopClicked, registerPinCreator }) => {
                 marker._baseZIndex = 10;
                 marker.setZIndex = function(z) { this.zIndex = z; this.element && (this.element.style.zIndex = z); this.zIndex = z; };
 
-                marker.addListener('click', () => {
+                marker.addListener('click', (event) => {
+                    // See BusMarkers.jsx: stop the click from bubbling to the map's
+                    // own 'click' listener, which would immediately clear this selection.
+                    event?.stopPropagation?.();
+                    event?.domEvent?.stopPropagation?.();
                     // Pass to parent
                     stopClicked(stop, 'stop', marker);
                 });

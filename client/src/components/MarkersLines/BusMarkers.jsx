@@ -219,7 +219,12 @@ const BusMarkers = ({ routeIds, map, busClicked, registerPinCreator, updateSelec
                         element.__pinRotation = rotation;
                         element.__pinPing = false;
 
-                        marker.addListener('click', () => {
+                        marker.addListener('click', (event) => {
+                            // Advanced markers render real DOM content over the map pane, so a
+                            // marker click also bubbles into the map's own 'click' listener
+                            // (which clears the selection) unless we stop it here.
+                            event?.stopPropagation?.();
+                            event?.domEvent?.stopPropagation?.();
                             busClicked(marker.vehicleData, 'bus', marker);
                         });
 
