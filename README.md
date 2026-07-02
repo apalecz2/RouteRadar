@@ -1,5 +1,7 @@
 # RouteRadar
 
+**Live demo: [transit.aidenpaleczny.com](https://transit.aidenpaleczny.com/)**
+
 RouteRadar is a real-time transit tracking application designed around publicly accessable raw transit data from the London Transit Commission (LTC). It visualizes live bus locations in London, Ontario on an interactive Google Map, providing users with up-to-the-minute updates on vehicle positions, routes, and arrival times.
 
 This project demonstrates the integration of real-time data feeds (GTFS-Realtime) with a modern web stack, utilizing GraphQL Subscriptions for efficient, low-latency updates.
@@ -59,7 +61,7 @@ Start the server:
 ```bash
 npm start
 ```
-The server will start on `http://localhost:4000` (or the port defined in `src/config.js`). It exposes a GraphQL endpoint at `/graphql`.
+The server will start on `http://localhost:4000` (or the port defined in `src/config.js`). It exposes GraphQL Subscriptions over a WebSocket connection at `/graphql`.
 
 #### 2. Frontend Setup
 
@@ -99,7 +101,11 @@ The system consists of two main components:
 
 ## Deployment
 
-The project is configured for deployment on [Render](https://render.com/). It sets up both the web service (frontend) and the backend service.
+The project is deployed on [Render](https://render.com/). `render.yaml` configures the static frontend build; the backend WebSocket server is deployed as a separate Render web service.
+
+## License
+
+MIT — see [LICENSE](./LICENSE).
 
 ## Author
 
