@@ -169,6 +169,53 @@
 }
 
 
+/*
+ * "Launch App" button + arrow, used in LandingPage.jsx. Both keep breathing/nudging
+ * continuously (idle) at all times; hovering only raises the --launch-*-peak custom
+ * property that the same running keyframes read every frame. Because the animation
+ * never restarts, there's no snap no matter when hover starts/ends mid-cycle.
+ */
+@property --launch-peak {
+    syntax: '<number>';
+    inherits: false;
+    initial-value: 1.025;
+}
+
+@property --launch-arrow-peak {
+    syntax: '<length>';
+    inherits: false;
+    initial-value: 2px;
+}
+
+@keyframes launch-breathe {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(var(--launch-peak)); }
+}
+
+@keyframes launch-arrow-nudge {
+    0%, 100% { transform: translateX(0); }
+    50% { transform: translateX(var(--launch-arrow-peak)); }
+}
+
+.launch-btn {
+    animation: launch-breathe 1.8s ease-in-out infinite;
+    transition: --launch-peak 0.35s ease;
+}
+
+.launch-btn:hover {
+    --launch-peak: 1.07;
+}
+
+.launch-btn-arrow {
+    display: inline-block;
+    animation: launch-arrow-nudge 1.8s ease-in-out infinite;
+    transition: --launch-arrow-peak 0.35s ease;
+}
+
+.launch-btn:hover .launch-btn-arrow {
+    --launch-arrow-peak: 7px;
+}
+
 @layer components {
   .scrollbar::-webkit-scrollbar {
     width: 15px;
