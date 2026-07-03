@@ -6,6 +6,10 @@ RouteRadar is a real-time transit tracking application designed around publicly 
 
 This project demonstrates the integration of real-time data feeds (GTFS-Realtime) with a modern web stack, utilizing GraphQL Subscriptions for efficient, low-latency updates.
 
+![RouteRadar demo](docs/assets/demo.gif)
+
+*GIF compressed for GitHub -- check out the [live demo](https://transit.aidenpaleczny.com/) to see it more clearly!*
+
 ## Features
 
 - **Real-Time Tracking:** Watch buses move live on the map as they report their positions.
