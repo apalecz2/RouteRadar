@@ -99,6 +99,8 @@ The system consists of two main components:
 1.  **Polling Server:** The backend repeatedly triggers the LTC GTFS-Realtime endpoints (`Vehicle/VehiclePositions.json` and `TripUpdate/TripUpdates.json`). It processes this data, mapping trip updates to vehicles, and caches the latest state.
 2.  **GraphQL Subscription Server:** When the frontend subscribes to updates (e.g., for a specific route), the server pushes the latest cached data to the client via WebSockets whenever new data is polled.
 
+Route/stop geometry (`client/public/stops.json` and `routes.json`) comes from a separate source: LTC's *static* GTFS feed (schedule/shape data, as opposed to the realtime feeds above), which changes only a few times a year at seasonal service updates. Rather than fetch and process that on the always-on realtime server, [`scripts/gtfs-static/`](scripts/gtfs-static/) is a standalone transform (unit-tested against a fixture feed — see `transform.test.mjs`) run weekly by [`.github/workflows/update-gtfs.yml`](.github/workflows/update-gtfs.yml), which downloads the feed, regenerates both JSON files, and commits them only if the feed actually changed. A push to `main` triggers Render's normal static-site rebuild — no extra runtime infrastructure needed for this.
+
 ## Scaling
 
 The backend is intentionally a single Node.js process: one polling loop fetches LTC's GTFS-Realtime feeds, caches the latest state in-memory (`server/src/state.js`), and fans updates out to subscribed clients via a Node `EventEmitter` feeding GraphQL subscriptions over WebSockets.

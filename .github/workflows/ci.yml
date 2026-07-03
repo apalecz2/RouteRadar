@@ -38,3 +38,14 @@ jobs:
           cache-dependency-path: server/package-lock.json
       - run: npm ci
       - run: npm test
+
+  gtfs-static:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+        # Quote the glob so Node's test runner expands it rather than the shell,
+        # keeping this independent of the runner's shell.
+      - run: node --test "scripts/gtfs-static/**/*.test.mjs"

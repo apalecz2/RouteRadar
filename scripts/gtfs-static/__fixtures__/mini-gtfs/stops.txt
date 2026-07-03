@@ -1,0 +1,4 @@
+stop_id,stop_code,stop_name,stop_desc,stop_lat,stop_lon,zone_id,stop_url,location_type,parent_station,stop_timezone,wheelchair_boarding
+STOPA,100,Main at First NB - #100,,43.0,-81.0,,,,,,0
+STOPB,101,Main at Second SB - #101,,43.001,-81.001,,,,,,0
+STOPNOCODE,,Temp Stop (no code),,43.002,-81.002,,,,,,0

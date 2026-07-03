@@ -56,6 +56,35 @@ describe('getCachedData', () => {
         expect(globalThis.fetch).toHaveBeenCalledTimes(2);
     });
 
+    it('serves stale cache immediately but revalidates in the background', async () => {
+        const STALE_ROUTES = [{ id: 'stale' }];
+        globalThis.localStorage.setItem('dataCacheVersion', 'v1');
+        globalThis.localStorage.setItem('routesData', JSON.stringify(STALE_ROUTES));
+        globalThis.localStorage.setItem('stopsData', JSON.stringify(STOPS));
+        // 48h old -> past MAX_AGE_MS
+        globalThis.localStorage.setItem('dataCacheTimestamp', String(Date.now() - 48 * 60 * 60 * 1000));
+
+        const { routes } = await getCachedData();
+
+        // The stale copy is returned immediately, not blocked on the network.
+        expect(routes).toEqual(STALE_ROUTES);
+        // ...but a background refresh was kicked off.
+        expect(globalThis.fetch).toHaveBeenCalled();
+
+        // Once it settles, the cache holds the fresh data for the next load.
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        expect(JSON.parse(globalThis.localStorage.getItem('routesData'))).toEqual(ROUTES);
+    });
+
+    it('does not refetch when the cache is fresh', async () => {
+        await getCachedData(); // populates cache + a fresh timestamp
+        globalThis.fetch.mockClear();
+
+        await getCachedData();
+
+        expect(globalThis.fetch).not.toHaveBeenCalled();
+    });
+
     it('refetches when cached JSON is corrupt', async () => {
         globalThis.localStorage.setItem('dataCacheVersion', 'v1');
         globalThis.localStorage.setItem('routesData', 'not valid json');
