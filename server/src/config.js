@@ -1,5 +1,12 @@
-export const VEHICLE_URL = 'http://gtfs.ltconline.ca/Vehicle/VehiclePositions.json';
-export const TRIP_UPDATE_URL = 'http://gtfs.ltconline.ca/TripUpdate/TripUpdates.json';
+// LTC publishes each realtime feed both as native GTFS-Realtime protobuf (.pb)
+// and as a verbose JSON rendering of the same data (.json). We use the protobuf:
+// it carries identical content at a fraction of the size, and every byte the
+// poller pulls is billed as outbound bandwidth (Render bills service-initiated
+// traffic, response bodies included). Measured 2026-08-12:
+//   VehiclePositions  95.9 KB json -> 14.3 KB pb
+//   TripUpdates       22.5 MB json ->  2.9 MB pb   (the dominant cost)
+export const VEHICLE_URL = 'http://gtfs.ltconline.ca/Vehicle/VehiclePositions.pb';
+export const TRIP_UPDATE_URL = 'http://gtfs.ltconline.ca/TripUpdate/TripUpdates.pb';
 export const UPDATE_PERIOD_SEC = 30;
 export const PORT = process.env.PORT || 4000;
 

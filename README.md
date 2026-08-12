@@ -100,8 +100,17 @@ Open your browser and navigate to the URL shown in the terminal (usually `http:/
 
 The system consists of two main components:
 
-1.  **Polling Server:** The backend repeatedly triggers the LTC GTFS-Realtime endpoints (`Vehicle/VehiclePositions.json` and `TripUpdate/TripUpdates.json`). It processes this data, mapping trip updates to vehicles, and caches the latest state.
+1.  **Polling Server:** The backend repeatedly triggers the LTC GTFS-Realtime endpoints (`Vehicle/VehiclePositions.pb` and `TripUpdate/TripUpdates.pb`). It processes this data, mapping trip updates to vehicles, and caches the latest state.
 2.  **GraphQL Subscription Server:** When the frontend subscribes to updates (e.g., for a specific route), the server pushes the latest cached data to the client via WebSockets whenever new data is polled.
+
+### Outbound bandwidth
+
+Render bills *service-initiated* traffic, so the response body of every feed the poller downloads counts against the hosting plan's outbound allowance. The always-on poller is by far the largest consumer, and two things keep it affordable:
+
+- **Protobuf, not JSON.** LTC publishes each realtime feed both as native GTFS-Realtime protobuf (`.pb`) and as a much more verbose JSON rendering of identical data. `TripUpdates` measured 22.5 MB as JSON versus 2.9 MB as protobuf (`VehiclePositions`: 95.9 KB versus 14.3 KB), so the server consumes the protobuf and decodes it with `gtfs-realtime-bindings`.
+- **Polling only while someone is watching.** The service is kept awake around the clock by `/keepalive`, so an ungated poller would download both feeds every 30s forever, whether or not anyone had the site open. `server/src/services/activityService.js` counts open GraphQL subscriptions; the loop parks when that count hits zero and resumes on the next subscriber.
+
+One consequence worth knowing when reading the polling code: because the poller idles, the cached state a newly connected client is seeded with may be as old as the idle period. The first live poll follows within a second or two, and the client already discards vehicle updates older than 90s.
 
 Route/stop geometry (`client/public/stops.json` and `routes.json`) comes from a separate source: LTC's *static* GTFS feed (schedule/shape data, as opposed to the realtime feeds above), which changes only a few times a year at seasonal service updates. Rather than fetch and process that on the always-on realtime server, [`scripts/gtfs-static/`](scripts/gtfs-static/) is a standalone transform (unit-tested against a fixture feed — see `transform.test.mjs`) run weekly by [`.github/workflows/update-gtfs.yml`](.github/workflows/update-gtfs.yml), which downloads the feed, regenerates both JSON files, and commits them only if the feed actually changed. A push to `main` triggers Render's normal static-site rebuild — no extra runtime infrastructure needed for this.
 
