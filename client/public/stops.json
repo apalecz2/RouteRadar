@@ -4718,8 +4718,8 @@
     "stop_id": "DUNDSASK",
     "name": "Dundas at Saskatoon EB",
     "coordinates": [
-      43.000664,
-      -81.190041
+      43.000824,
+      -81.189525
     ],
     "routes": [
       "2B",
@@ -8691,8 +8691,8 @@
     "stop_id": "LIMBARD3",
     "name": "Limberlost between Lawson and Ardsley NB",
     "coordinates": [
-      42.999973,
-      -81.308371
+      43.000227,
+      -81.308514
     ],
     "routes": [
       "9"
@@ -13300,8 +13300,8 @@
     "stop_id": "SHELDEVE",
     "name": "Shelborne at Deveron EB",
     "coordinates": [
-      42.963077,
-      -81.196346
+      42.963033,
+      -81.196442
     ],
     "routes": [
       "1A"
@@ -18034,6 +18034,33 @@
     ]
   },
   {
+    "id": 2223,
+    "stop_id": "FANCOLL2",
+    "name": "Fanshawe College Stop 2",
+    "coordinates": [
+      43.011688,
+      -81.199001
+    ],
+    "routes": [
+      "17A",
+      "20",
+      "91"
+    ]
+  },
+  {
+    "id": 2224,
+    "stop_id": "FANCOLL3",
+    "name": "Fanshawe College Stop 3",
+    "coordinates": [
+      43.011734,
+      -81.198843
+    ],
+    "routes": [
+      "4B",
+      "17A"
+    ]
+  },
+  {
     "id": 2227,
     "stop_id": "FANSDER1",
     "name": "Fanshawe at Derwent EB",
@@ -18717,6 +18744,18 @@
     ],
     "routes": [
       "17A"
+    ]
+  },
+  {
+    "id": 2331,
+    "stop_id": "FANCOLL1",
+    "name": "Fanshawe College Stop 1",
+    "coordinates": [
+      43.011645,
+      -81.199162
+    ],
+    "routes": [
+      "36"
     ]
   },
   {
@@ -20215,10 +20254,10 @@
   {
     "id": 2594,
     "stop_id": "WHARSOUT",
-    "name": "Wharncliffe & Southdale NS SB",
+    "name": "Wharncliffe at Southdale SB",
     "coordinates": [
-      42.941215,
-      -81.257979
+      42.939992,
+      -81.258558
     ],
     "routes": [
       "12"
@@ -20956,8 +20995,8 @@
     "stop_id": "MONTTWE2",
     "name": "Montabello at Tweedsmuir SB",
     "coordinates": [
-      42.980081,
-      -81.17982
+      42.980229,
+      -81.180259
     ],
     "routes": [
       "5A"
@@ -21040,8 +21079,8 @@
     "stop_id": "HYDENRN2",
     "name": "Hyde Park at North Routledge Park 1 SB",
     "coordinates": [
-      43.003538,
-      -81.334617
+      43.003699,
+      -81.334661
     ],
     "routes": [
       "19"
@@ -23219,13 +23258,8 @@
       -81.197605
     ],
     "routes": [
-      "4B",
-      "17A",
-      "20",
       "25",
-      "27",
-      "36",
-      "91"
+      "27"
     ]
   },
   {
@@ -23926,6 +23960,26 @@
     "routes": [
       "30"
     ]
+  },
+  {
+    "id": 2996,
+    "stop_id": "WESONBCR",
+    "name": "Wellington at South Station NB",
+    "coordinates": [
+      42.97581,
+      -81.24065
+    ],
+    "routes": []
+  },
+  {
+    "id": 2997,
+    "stop_id": "WESOSBCR",
+    "name": "Wellington at South Station SB",
+    "coordinates": [
+      42.97501,
+      -81.24033
+    ],
+    "routes": []
   },
   {
     "id": 2998,
