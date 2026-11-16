@@ -2040,8 +2040,8 @@
     "stop_id": "BOLEGRIF",
     "name": "Boler at Griffith NB",
     "coordinates": [
-      42.945802,
-      -81.329332
+      42.944609,
+      -81.329039
     ],
     "routes": [
       "5A"
@@ -3819,8 +3819,8 @@
     "stop_id": "COMMSPR4",
     "name": "Commissioners at Springbank Park WB",
     "coordinates": [
-      42.958611,
-      -81.328577
+      42.958804,
+      -81.329343
     ],
     "routes": [
       "5A"
@@ -6087,18 +6087,6 @@
     "coordinates": [
       42.951835,
       -81.340118
-    ],
-    "routes": [
-      "5A"
-    ]
-  },
-  {
-    "id": 810,
-    "stop_id": "GRIFBOLE",
-    "name": "Griffith at Boler EB",
-    "coordinates": [
-      42.944079,
-      -81.329386
     ],
     "routes": [
       "5A"
@@ -10390,27 +10378,12 @@
     ]
   },
   {
-    "id": 1307,
-    "stop_id": "OXFOHIG1",
-    "name": "Oxbury Centre EB",
-    "coordinates": [
-      43.007889,
-      -81.210425
-    ],
-    "routes": [
-      "4A",
-      "17A",
-      "20",
-      "104"
-    ]
-  },
-  {
     "id": 1308,
     "stop_id": "OXFOHIG2",
     "name": "Oxford at Highbury WB",
     "coordinates": [
-      43.008071,
-      -81.210439
+      43.008615,
+      -81.208702
     ],
     "routes": [
       "4B",
@@ -10425,29 +10398,14 @@
     "stop_id": "OXFOHIG3",
     "name": "Oxford at Highbury EB",
     "coordinates": [
-      43.008468,
-      -81.208349
+      43.008535,
+      -81.208009
     ],
     "routes": [
       "4A",
       "17A",
       "20",
       "91",
-      "104"
-    ]
-  },
-  {
-    "id": 1310,
-    "stop_id": "OXFOHIG4",
-    "name": "John Paul Secondary School WB",
-    "coordinates": [
-      43.008983,
-      -81.2073
-    ],
-    "routes": [
-      "4B",
-      "17A",
-      "20",
       "104"
     ]
   },
@@ -10760,21 +10718,6 @@
     "routes": [
       "17A",
       "91"
-    ]
-  },
-  {
-    "id": 1336,
-    "stop_id": "OXFOROE2",
-    "name": "Oxford at Roehampton WB",
-    "coordinates": [
-      43.010051,
-      -81.203514
-    ],
-    "routes": [
-      "4B",
-      "17A",
-      "20",
-      "104"
     ]
   },
   {
@@ -14311,8 +14254,8 @@
     "stop_id": "SPRIHIC1",
     "name": "Springbank at Hillcrest Dr EB",
     "coordinates": [
-      42.958905,
-      -81.303107
+      42.959073,
+      -81.302732
     ],
     "routes": [
       "5A"
@@ -15766,19 +15709,6 @@
     ]
   },
   {
-    "id": 1922,
-    "stop_id": "WELLALEX",
-    "name": "Wellington & Alexandra St NB",
-    "coordinates": [
-      42.967398,
-      -81.232396
-    ],
-    "routes": [
-      "1A",
-      "13"
-    ]
-  },
-  {
     "id": 1923,
     "stop_id": "WELLBAS1",
     "name": "Wellington South of Baseline NB",
@@ -15805,19 +15735,6 @@
     ]
   },
   {
-    "id": 1925,
-    "stop_id": "WELLBOND",
-    "name": "Wellington at Bond  NB",
-    "coordinates": [
-      42.968858,
-      -81.234644
-    ],
-    "routes": [
-      "1A",
-      "13"
-    ]
-  },
-  {
     "id": 1926,
     "stop_id": "WELLBRA1",
     "name": "Wellington North of Bradley  NB",
@@ -15839,7 +15756,6 @@
       -81.223468
     ],
     "routes": [
-      "10",
       "13"
     ]
   },
@@ -16215,19 +16131,6 @@
     ]
   },
   {
-    "id": 1970,
-    "stop_id": "WELLTHJA",
-    "name": "Wellington at Thomas Janes SB",
-    "coordinates": [
-      42.965569,
-      -81.232118
-    ],
-    "routes": [
-      "1B",
-      "13"
-    ]
-  },
-  {
     "id": 1971,
     "stop_id": "WELLWAT1",
     "name": "Wellington at Waterman NB",
@@ -16248,19 +16151,6 @@
       -81.229486
     ],
     "routes": [
-      "13"
-    ]
-  },
-  {
-    "id": 1974,
-    "stop_id": "WELLWELL",
-    "name": "Wellington at Wellington Cres SB",
-    "coordinates": [
-      42.968432,
-      -81.234085
-    ],
-    "routes": [
-      "1B",
       "13"
     ]
   },
